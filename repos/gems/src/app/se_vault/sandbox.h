@@ -81,7 +81,7 @@ namespace File_vault {
 	                    char const *root, bool writeable)
 	{
 		xml.node("policy", [&] {
-			xml.attribute("label_prefix ", label_prefix);
+			xml.attribute("label_prefix", label_prefix);
 			xml.attribute("root", root);
 			xml.attribute("writeable", writeable ? "yes" : "no");
 		});
@@ -216,7 +216,7 @@ namespace File_vault {
 				gen_vfs_policy(xml, "sync_to_tresor_vfs_init -> ", "/dev", true);
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
+				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
 				gen_parent_route(xml, "File_system", "tresor_fs -> /");
 				gen_common_routes(xml);
 			});
@@ -250,7 +250,7 @@ namespace File_vault {
 				});
 				gen_vfs_policy(xml, "se_tresor_init_trust_anchor -> trust_anchor", "/dev/tresor_trust_anchor", true);
 				gen_vfs_policy(xml, "se_tresor_init -> trust_anchor", "/dev/tresor_trust_anchor", true);
-				gen_vfs_policy(xml, "tresor_vfs -> trust_anchor", "/dev/tresor_trust_anchor", true);
+				gen_vfs_policy(xml, "se_tresor_vfs -> trust_anchor", "/dev/tresor_trust_anchor", true);
 			});
 			xml.node("route", [&] {
 				gen_parent_route(xml, "File_system", "storage_dir -> /");
@@ -319,7 +319,7 @@ namespace File_vault {
 				});
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "tresor_vfs", "File_system");
+				gen_child_route(xml, "se_tresor_vfs", "File_system");
 				gen_common_routes(xml);
 			});
 		});
@@ -345,7 +345,7 @@ namespace File_vault {
 				gen_policy("rump_vfs -> ");
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "tresor_vfs", "File_system");
+				gen_child_route(xml, "se_tresor_vfs", "File_system");
 				gen_common_routes(xml);
 			});
 		});
@@ -472,17 +472,17 @@ namespace File_vault {
 
 	void gen_extend_fs_tool_start_node(Xml_generator &xml, Child_state const &child, char const *tree, Number_of_blocks num_blocks) {
 		log("gen_extend_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "tresor_vfs", "/tresor/control/extend", String<64>("tree=", tree, ",blocks=", num_blocks));
+		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/extend", String<64>("tree=", tree, ",blocks=", num_blocks));
 	}
 
 	void gen_lock_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_lock_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "tresor_vfs", "/tresor/control/deinitialize", "true");
+		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/deinitialize", "true");
 	}
 
 	void gen_rekey_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_rekey_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "tresor_vfs", "/tresor/control/rekey", "true");
+		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/rekey", "true");
 	}
 
 	void gen_image_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
@@ -492,22 +492,22 @@ namespace File_vault {
 
 	void gen_client_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_client_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "tresor_vfs", "/", false);
+		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/", false);
 	}
 
 	void gen_extend_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_extend_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "tresor_vfs", "/tresor/control", true);
+		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
 	}
 
 	void gen_lock_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_lock_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "tresor_vfs", "/tresor/control", true);
+		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
 	}
 
 	void gen_rekey_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_rekey_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "tresor_vfs", "/tresor/control", true);
+		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
 	}
 
 	void gen_snapper_start_node(Xml_generator &xml) {
@@ -527,7 +527,7 @@ namespace File_vault {
 			});
 		});
 		xml.node("route", [&] {
-			gen_child_route(xml, "tresor_vfs", "File_system");
+			gen_child_route(xml, "se_tresor_vfs", "File_system");
 			gen_child_route(xml, "ahci", "Block");
 			gen_common_routes(xml);
 			// xml.node("any-service", [&] {

@@ -178,7 +178,6 @@ class Main : Vfs::Env::User
 
 			switch (_state) {
 			case State::WRITE:
-				log("W");
 				result = _init_file->write_complete();
 				if (result.complete) {
 					_init_file->drop_io_job();
@@ -188,12 +187,10 @@ class Main : Vfs::Env::User
 				}
 				break;
 			case State::READ:
-				log("R");
 				result = _init_file->read_complete();
 				if (result.complete) {
 					_init_file->drop_io_job();
 					_init_file.destruct();
-					log(result.success ? 0 : 1);
 					_env.parent().exit(result.success ? 0 : 1); // Check
 					return;
 				}
@@ -229,8 +226,6 @@ class Main : Vfs::Env::User
 
 			/* kick-off writing */
 			_init_file->write_passphrase(passphrase.string());
-			log("Init_file");
-
 			_handle_io();
 		}
 };
