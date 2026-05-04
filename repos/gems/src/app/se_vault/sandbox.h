@@ -365,23 +365,23 @@ namespace File_vault {
 				xml.attribute("trust_anchor_dir", "/trust_anchor");
 				xml.attribute("verbose", "yes");
 				xml.node("vfs", [&] {
-					// gen_named_node(xml, "dir", "trust_anchor", [&] {
-					// 	xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); 
-					// });
-					xml.node("dir", [&] {
-						xml.attribute("name", "trust_anchor");
-						xml.node("fs", [&] {});
+					gen_named_node(xml, "dir", "trust_anchor", [&] {
+						xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); 
 					});
+					// xml.node("dir", [&] {
+					// 	xml.attribute("name", "trust_anchor");
+					// 	xml.node("fs", [&] {});
+					// });
 				});
 			});
 			xml.node("route", [&] {
-				// gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
-				xml.node("service", [&] {
-					xml.attribute("name", "File_system");
-					xml.node("child", [&] {
-						xml.attribute("name", "usb_sec_fs");
-					});
-				});
+				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
+				// xml.node("service", [&] {
+				// 	xml.attribute("name", "File_system");
+				// 	xml.node("child", [&] {
+				// 		xml.attribute("name", "usb_sec_fs");
+				// 	});
+				// });
 				gen_common_routes(xml);
 			});
 		});
