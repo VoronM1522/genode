@@ -352,7 +352,11 @@ namespace File_vault {
 	}
 
 //  <service name="File_system" label_suffix="ta -> /"> <child name="usb_sec_fs"/> </service>
-
+// <vfs>
+//           <dir name="se_trust_anchor">
+//             <fs label="ta -> /"/>
+//           </dir>
+//         </vfs>
 	void gen_tresor_init_trust_anchor_start_node(Xml_generator &xml, Child_state const &child, Passphrase const &passphrase)
 	{
 		child.gen_start_node(xml, [&] {
@@ -361,8 +365,14 @@ namespace File_vault {
 				xml.attribute("trust_anchor_dir", "/trust_anchor");
 				xml.attribute("verbose", "yes");
 				xml.node("vfs", [&] {
-					gen_named_node(xml, "dir", "trust_anchor", [&] {
-						xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); }); });
+					// gen_named_node(xml, "dir", "trust_anchor", [&] {
+					// 	xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); 
+					// });
+					xml.node("dir", [&] {
+						xml.attribute("name", "trust_anchor");
+						xml.node("fs", [&] {});
+					});
+				});
 			});
 			xml.node("route", [&] {
 				// gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
