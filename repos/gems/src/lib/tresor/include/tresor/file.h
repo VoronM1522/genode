@@ -38,6 +38,7 @@ namespace Tresor {
 	{
 		using Open_result = Vfs::Directory_service::Open_result;
 		Vfs::Vfs_handle *handle { nullptr };
+		log(path.string());
 		ASSERT(env.root_dir().open(path.string(), mode, &handle, env.alloc()) == Open_result::OPEN_OK);
 		return *handle;
 	}
