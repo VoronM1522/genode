@@ -131,7 +131,7 @@ namespace File_vault {
 						xml.node("log", [&] {});
 					});
 				});
-				gen_arg(xml, "mkfs.ext4");
+				gen_arg(xml, "mkfs.ext2");
 				gen_arg(xml, "-F");
 				gen_arg(xml, "/dev/block");
 			});
@@ -291,6 +291,10 @@ namespace File_vault {
 			xml.node("config", [&] {
 				xml.attribute("size", size);
 				xml.attribute("path", path);
+				log("Size:");
+				log(size);
+				log("path:");
+				log(path);
 				xml.node("vfs", [&] {
 					gen_named_node(xml, "dir", "tresor", [&] {
 						xml.node("fs", [&] { xml.attribute("label", "tresor -> /"); }); }); });
@@ -375,7 +379,7 @@ namespace File_vault {
 				});
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
+				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
 				// xml.node("service", [&] {
 				// 	xml.attribute("name", "File_system");
 				// 	xml.node("child", [&] {
@@ -407,7 +411,7 @@ namespace File_vault {
 				sb_config.generate_xml(xml);
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
+				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
 				gen_parent_route(xml, "File_system");
 				gen_common_routes(xml);
 			});
@@ -449,11 +453,11 @@ namespace File_vault {
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
 					xml.node("fs", [&] { xml.attribute("writeable", "no"); }); });
-				// xml.node("query", [&] {
-				// 	xml.attribute("path", path);
-				// 	xml.attribute("size", "yes");
-				// 	xml.attribute("content", content ? "yes" : "no");
-				// });
+				xml.node("query", [&] {
+					xml.attribute("path", path);
+					xml.attribute("size", "yes");
+					xml.attribute("content", content ? "yes" : "no");
+				});
 				path = 0;
 				content = 0;
 			});
@@ -512,31 +516,37 @@ namespace File_vault {
 	}
 
 	void gen_snapper_start_node(Xml_generator &xml) {
-		gen_provides(xml, "Snapper");
-		xml.node("config", [&] {
-			xml.attribute("verbose", "true");
-			xml.attribute("redundancy", "2");
-			xml.attribute("integrity", "true");
-			xml.attribute("max_snapshots", "0");
-			xml.attribute("min_snapshots", "0");
-			xml.attribute("threshold", "1000");
-			xml.attribute("expiration", "3600");
-			xml.attribute("bufsize", "10M");
-			xml.node("rtc", [&] {});
-			xml.node("vfs", [&] {
-				xml.node("fs", [&] {});
+		xml.node("start", [&] {
+			xml.attribute("name", "snapper");
+			xml.attribute("caps", "200");
+			xml.attribute("ram", "400M");
+			gen_provides(xml, "Snapper");
+			xml.node("config", [&] {
+				xml.attribute("verbose", "true");
+				xml.attribute("redundancy", "2");
+				xml.attribute("integrity", "true");
+				xml.attribute("max_snapshots", "0");
+				xml.attribute("min_snapshots", "0");
+				xml.attribute("threshold", "1000");
+				xml.attribute("expiration", "3600");
+				xml.attribute("bufsize", "10M");
+				xml.node("rtc", [&] {});
+				xml.node("vfs", [&] {
+					xml.node("fs", [&] {});
+				});
 			});
-		});
-		xml.node("route", [&] {
-			gen_child_route(xml, "se_tresor_vfs", "File_system");
-			gen_child_route(xml, "ahci", "Block");
-			gen_common_routes(xml);
-			// xml.node("any-service", [&] {
-			// xml.node("parent", [&] {});
-			// xml.node("any-child", [&] {});
-			// });
-		});
+			xml.node("route", [&] {
+				gen_child_route(xml, "se_tresor_vfs", "File_system");
+				gen_child_route(xml, "ahci", "Block");
+				gen_common_routes(xml);
+				// xml.node("any-service", [&] {
+				// xml.node("parent", [&] {});
+				// xml.node("any-child", [&] {});
+				// });
+			});
 
+		});
+		
 		log("gen_snapper_start_node DONE!");
 	}
 
@@ -576,22 +586,27 @@ namespace File_vault {
 // -->
 
 	void gen_isomem_start_node(Xml_generator &xml) {
-		xml.node("resource", [&] {
-			xml.attribute("name", "RAM");
-			xml.attribute("quantum", "1G");
+		xml.node("start", [&] {
+			xml.attribute("name", "isomem");
+			xml.attribute("caps", "2000");
+			xml.node("resource", [&] {
+				xml.attribute("name", "RAM");
+				xml.attribute("quantum", "1G");
+			});
+			xml.node("config", [&] {
+				xml.attribute("verbose", "true");
+				xml.attribute("ld_verbose", "yes");
+			});
+			xml.node("route", [&] {
+				gen_child_route(xml, "ahci", "Block");
+				gen_common_routes(xml);
+				// xml.node("any-service", [&] {
+				// xml.node("parent", [&] {});
+				// xml.node("any-child", [&] {});
+				// });
+			});
 		});
-		xml.node("config", [&] {
-			xml.attribute("verbose", "true");
-			xml.attribute("ld_verbose", "yes");
-		});
-		xml.node("route", [&] {
-			gen_child_route(xml, "ahci", "Block");
-			gen_common_routes(xml);
-			// xml.node("any-service", [&] {
-			// xml.node("parent", [&] {});
-			// xml.node("any-child", [&] {});
-			// });
-		});
+		
 
 		log("gen_isomem_start_node DONE!");
 	}

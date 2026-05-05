@@ -318,29 +318,35 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 		update_sandbox_config();
 		log("SETUP_CREATE_IMAGE DONE!");
 
-		set_state(SETUP_INIT_TRUST_ANCHOR);
-		update_sandbox_config();
-		log("SETUP_INIT_TRUST_ANCHOR DONE!");
+		// set_state(SETUP_INIT_TRUST_ANCHOR);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("SETUP_INIT_TRUST_ANCHOR DONE!");
 
-		set_state(SETUP_TRESOR_INIT);
-		update_sandbox_config();
-		log("SETUP_TRESOR_INIT DONE!");
+		// set_state(SETUP_TRESOR_INIT);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("SETUP_TRESOR_INIT DONE!");
 
-		set_state(SETUP_START_TRESOR);
-		update_sandbox_config();
-		log("SETUP_START_TRESOR DONE!");
+		// set_state(SETUP_START_TRESOR);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("SETUP_START_TRESOR DONE!");
 
-		set_state(SETUP_MKE2FS);
-		update_sandbox_config();
-		log("SETUP_MKE2FS DONE!");
+		// set_state(SETUP_MKE2FS);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("SETUP_MKE2FS DONE!");
 
-		set_state(SETUP_READ_FS_SIZE);
-		update_sandbox_config();
-		log("SETUP_READ_FS_SIZE DONE!");
+		// set_state(SETUP_READ_FS_SIZE);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("SETUP_READ_FS_SIZE DONE!");
 
-		set_state(UNLOCKED);
-		update_sandbox_config();
-		log("UNLOCKED DONE!");
+		// set_state(UNLOCKED);
+		// handle_sandbox_state();
+		// // update_sandbox_config();
+		// log("UNLOCKED DONE!");
 		
 		// set_state(UNLOCK_INIT_TRUST_ANCHOR);
 		// update_sandbox_config();
@@ -813,6 +819,8 @@ void Main::gen_sandbox_cfg_extend_and_rekey(Xml_generator &xml) const
 
 void Main::generate_sandbox_config(Xml_generator &xml) const
 {
+	uint64_t AAAsize;
+
 	switch (state) {
 	case INVALID:
 		gen_parent_provides_and_report_nodes(xml);
@@ -853,6 +861,21 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		break;
 
 	case SETUP_CREATE_IMAGE:
+		log("TRESOR_VBD_MAX_LVL=", TRESOR_VBD_MAX_LVL);
+		log("TRESOR_VBD_DEGREE=", TRESOR_VBD_DEGREE);
+		log("tresor_tree_num_leaves(CLIENT_FS_SIZE)=",
+			tresor_tree_num_leaves(CLIENT_FS_SIZE));
+		log("TRESOR_FREE_TREE_MAX_LVL=", TRESOR_FREE_TREE_MAX_LVL);
+		log("TRESOR_FREE_TREE_DEGREE=", TRESOR_FREE_TREE_DEGREE);
+		log("tresor_tree_num_leaves(min_journal_buf)=",
+			tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE)));
+		AAAsize = BLOCK_SIZE * tresor_num_blocks(
+        NR_OF_SUPERBLOCK_SLOTS,
+        TRESOR_VBD_MAX_LVL + 1, TRESOR_VBD_DEGREE,
+        tresor_tree_num_leaves(CLIENT_FS_SIZE),
+        TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE,
+        tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE)));
+		log("size: ", AAAsize);
 
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
@@ -860,15 +883,19 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 			xml, truncate_file, File_path("/tresor/", image_name).string(),
 			BLOCK_SIZE * tresor_num_blocks(
 				NR_OF_SUPERBLOCK_SLOTS,
-				TRESOR_VBD_MAX_LVL + 1, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(MIN_CLIENT_FS_SIZE), // ui_config->client_fs_size),
-				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(MIN_CLIENT_FS_SIZE))); // ui_config->journaling_buf_size)));
+				TRESOR_VBD_MAX_LVL + 1, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE), // ui_config->client_fs_size),
+				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE)))); // ui_config->journaling_buf_size)));
+		
+		// log("BLOCK_SIZE=", BLOCK_SIZE);
+		// log("NR_OF_SUPERBLOCK_SLOTS=", NR_OF_SUPERBLOCK_SLOTS);
+
 		break;
 
 	case SETUP_TRESOR_INIT:
 	{
 		Tresor::Superblock_configuration sb_config {
-			Tree_configuration(TRESOR_VBD_MAX_LVL, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(MIN_CLIENT_FS_SIZE)), // ui_config->client_fs_size)),
-			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(MIN_CLIENT_FS_SIZE)) // ui_config->journaling_buf_size))
+			Tree_configuration(TRESOR_VBD_MAX_LVL, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE)), // ui_config->client_fs_size)),
+			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE))) // ui_config->journaling_buf_size))
 		};
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
