@@ -105,6 +105,9 @@ namespace File_vault {
 			// gen_service(xml, "Gui");
 			gen_service(xml, "Timer");
 			gen_service(xml, "Report");
+			gen_service(xml, "Rtc");
+			gen_service(xml, "Block");
+			gen_parent_route(xml, "Gui");
 		});
 	}
 
@@ -536,8 +539,10 @@ namespace File_vault {
 				});
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "se_tresor_vfs", "File_system");
+				gen_child_route(xml, "rump_vfs", "File_system");
 				gen_child_route(xml, "ahci", "Block");
+				gen_parent_route(xml, "Rtc");
+				gen_parent_route(xml, "Timer");
 				gen_common_routes(xml);
 				// xml.node("any-service", [&] {
 				// xml.node("parent", [&] {});
@@ -598,7 +603,12 @@ namespace File_vault {
 				xml.attribute("ld_verbose", "yes");
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "ahci", "Block");
+				gen_parent_route(xml, "Block");
+				// gen_child_route(xml, "ahci", "Block");
+				gen_parent_route(xml, "RM");
+				gen_parent_route(xml, "Timer");
+				gen_child_route(xml, "snapper", "Snapper");
+				gen_service(xml, "Gui");
 				gen_common_routes(xml);
 				// xml.node("any-service", [&] {
 				// xml.node("parent", [&] {});
