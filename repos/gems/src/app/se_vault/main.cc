@@ -313,14 +313,46 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 		// handle_ui_config_rom();
 		update_sandbox_config();
 		log("Main::update_sandbox_config START!");
+
 		set_state(SETUP_CREATE_IMAGE);
 		update_sandbox_config();
 		log("SETUP_CREATE_IMAGE DONE!");
-		set_state(UNLOCK_INIT_TRUST_ANCHOR);
+
+		set_state(SETUP_INIT_TRUST_ANCHOR);
 		update_sandbox_config();
-		log("UNLOCK_INIT_TRUST_ANCHOR DONE!");
+		log("SETUP_INIT_TRUST_ANCHOR DONE!");
+
+		set_state(SETUP_TRESOR_INIT);
+		update_sandbox_config();
+		log("SETUP_TRESOR_INIT DONE!");
+
+		set_state(SETUP_START_TRESOR);
+		update_sandbox_config();
+		log("SETUP_START_TRESOR DONE!");
+
+		set_state(SETUP_MKE2FS);
+		update_sandbox_config();
+		log("SETUP_MKE2FS DONE!");
+
+		set_state(SETUP_READ_FS_SIZE);
+		update_sandbox_config();
+		log("SETUP_READ_FS_SIZE DONE!");
+
+		set_state(UNLOCKED);
+		update_sandbox_config();
+		log("UNLOCKED DONE!");
+		
+		// set_state(UNLOCK_INIT_TRUST_ANCHOR);
+		// update_sandbox_config();
+		// log("UNLOCK_INIT_TRUST_ANCHOR DONE!");
 	}
 };
+
+	// enum State {
+	// 	INVALID, UNINITIALIZED, SETUP_CREATE_IMAGE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
+	// 	SETUP_START_TRESOR, SETUP_MKE2FS, SETUP_READ_FS_SIZE, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
+	// 	UNLOCK_START_TRESOR, UNLOCK_READ_FS_SIZE, UNLOCKED, LOCK_PENDING, START_LOCKING, LOCKING
+	// };
 
 
 // Ui_report::State Main::state_to_ui_report_state(State state)
@@ -861,6 +893,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		break;
 
 	case UNLOCKED:
+		log("UNLOCKED");
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);

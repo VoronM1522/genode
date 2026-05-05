@@ -375,7 +375,7 @@ namespace File_vault {
 				});
 			});
 			xml.node("route", [&] {
-				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
+				gen_child_route(xml, "tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
 				// xml.node("service", [&] {
 				// 	xml.attribute("name", "File_system");
 				// 	xml.node("child", [&] {
@@ -493,6 +493,7 @@ namespace File_vault {
 	void gen_client_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_client_fs_query_start_node");
 		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/", false);
+		log("gen_client_fs_query_start_node");
 	}
 
 	void gen_extend_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
