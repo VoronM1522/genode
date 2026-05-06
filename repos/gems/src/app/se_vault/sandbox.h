@@ -106,8 +106,9 @@ namespace File_vault {
 			gen_service(xml, "Timer");
 			gen_service(xml, "Report");
 			gen_service(xml, "Rtc");
-			gen_service(xml, "Block");
-			gen_parent_route(xml, "Gui");
+			// gen_service(xml, "Block");
+			// gen_parent_route(xml, "Gui");
+			gen_service(xml, "Snapper");
 		});
 	}
 

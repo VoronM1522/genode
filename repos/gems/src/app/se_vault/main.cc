@@ -927,8 +927,8 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
 		// gen_image_fs_query_start_node(xml, image_fs_query);
 		gen_sandbox_cfg_extend_and_rekey(xml);
-		gen_snapper_start_node(xml);
-		gen_isomem_start_node(xml);
+		// gen_snapper_start_node(xml);
+		// gen_isomem_start_node(xml);
 		if (extend_state != Extend::INACTIVE) //  && ui_config->extend->tree == Ui_config::Extend::VIRTUAL_BLOCK_DEVICE)
 			break;
 
