@@ -30,18 +30,54 @@ struct Main
 
 	Main(Env &env) : env(env)
 	{
-		unsigned mode = Vfs::Directory_service::OPEN_MODE_WRONLY;
+		unsigned mode = Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
 		Vfs::Directory_service::Stat stat { };
-		if (fs.stat(path.string(), stat) != Vfs::Directory_service::STAT_OK)
+
+		if (fs.stat(path.string(), stat) != Vfs::Directory_service::STAT_OK) {
 			mode |= Vfs::Directory_service::OPEN_MODE_CREATE;
+		} else if (stat.size >= size) {
+			log("File ", path, " exists, size: ", stat.size);
+			env.parent().exit(0);
+		} else {
+			log("Create file, size: ", size);
+		}
 
 		Vfs::Vfs_handle *handle_ptr = nullptr;
 		auto res = fs.open(path.string(), mode, &handle_ptr, heap);
+
 		if (res != Vfs::Directory_service::OPEN_OK || (handle_ptr == nullptr)) {
+			log("res: ", (int)res, "; handle_ptr: ", handle_ptr);
 			error("failed to create file '", path, "'");
 			env.parent().exit(-1);
 		}
-		handle_ptr->fs().ftruncate(handle_ptr, size);
+
+		auto truncate_res = handle_ptr->fs().ftruncate(handle_ptr, size);
+
+		// Проверить case'ы
+		switch (truncate_res) {
+		case Vfs::File_io_service::FTRUNCATE_OK:
+			log("FTRUNCATE_OK");
+			if (fs.stat(path.string(), stat) != Vfs::Directory_service::STAT_OK) {
+				log("Open check failed");
+				env.parent().exit(-1);
+			} else if (stat.size < size) {
+				log("Size check failed");
+				env.parent().exit(-1);
+			} else {
+				log("Open and size checks passed");
+			}
+			break;
+		case Vfs::File_io_service::FTRUNCATE_ERR_NO_SPACE:
+			error("no space left");
+			env.parent().exit(-1);
+		case Vfs::File_io_service::FTRUNCATE_ERR_NO_PERM:
+			error("permission denied");
+			env.parent().exit(-1);
+		case Vfs::File_io_service::FTRUNCATE_ERR_INTERRUPT:
+			error("interrupted");
+			env.parent().exit(-1);
+		}
+
 		handle_ptr->ds().close(handle_ptr);
 		env.parent().exit(0);
 	}

@@ -135,8 +135,10 @@ namespace File_vault {
 						xml.node("log", [&] {});
 					});
 				});
-				gen_arg(xml, "mkfs.ext2");
-				gen_arg(xml, "-F");
+				gen_arg(xml, "mkfs.ext3");
+				// gen_arg(xml, "-F");
+				// gen_arg(xml, "-O");
+				// gen_arg(xml, "^metadata_csum");
 				gen_arg(xml, "/dev/block");
 			});
 			xml.node("route", [&] {
@@ -262,6 +264,13 @@ namespace File_vault {
 			});
 		});
 	}
+// <dir name="dev">
+//    			<block name="block" block_buffer_count="128"/>
+//    		</dir>
+// <lwext4 block_device="/dev/block" cache_write_back="yes"
+//               expand_via_io="no" writeable="yes"
+//               reporting="no"
+//               external_cache_size="32M" report_cache="yes"/>
 
 	void gen_rump_vfs_start_node(Xml_generator &xml, Child_state const &child)
 	{
@@ -269,6 +278,26 @@ namespace File_vault {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
+					// xml.node("dir", [&] {
+					// 	xml.attribute("name", "dev");
+					// 	xml.node("block", [&] {
+					// 		xml.attribute("name", "block");
+					// 		xml.attribute("block_buffer_count", "128");
+					// 	});
+					// });
+					// xml.node("dir", [&] {
+					// 	xml.attribute("name", "root");
+					// 	xml.node("lwext4", [&] {
+					// 		xml.attribute("block_device", "/dev/block");
+					// 		xml.attribute("cache_write_back", "yes");
+					// 		xml.attribute("expand_via_io", "no");
+					// 		xml.attribute("writeable", "yes");
+					// 		xml.attribute("reporting", "no");
+					// 		xml.attribute("external_cache_size", "32M");
+					// 		xml.attribute("report_cache", "no");
+					// 	});
+					// });
+					
 					xml.node("rump", [&] {
 						xml.attribute("fs", "ext2fs");
 						xml.attribute("ram", "20M");
@@ -347,7 +376,8 @@ namespace File_vault {
 			gen_provides(xml, "Block");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
-					xml.node("fs", [&] { xml.attribute("buffer_size", "1M"); }); });
+					xml.node("fs", [&] { xml.attribute("buffer_size", "1M"); });
+				});
 				gen_policy("mke2fs -> default");
 				gen_policy("resize2fs -> default");
 				gen_policy("rump_vfs -> ");
