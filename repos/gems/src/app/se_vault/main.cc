@@ -152,7 +152,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	enum State {
 		INVALID, UNINITIALIZED, SETUP_CREATE_IMAGE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
-		SETUP_START_TRESOR, SETUP_MKE2FS, SETUP_READ_FS_SIZE, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
+		SETUP_START_TRESOR, SETUP_E2FSCK, SETUP_MKE2FS, SETUP_READ_FS_SIZE, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
 		UNLOCK_START_TRESOR, UNLOCK_READ_FS_SIZE, UNLOCKED, LOCK_PENDING, START_LOCKING, LOCKING
 	};
 
@@ -178,7 +178,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Registry<Child_state> children { };
 	Child_state mke2fs { children, "mke2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state resize2fs { children, "resize2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
-	Child_state tresor_vfs { children, "se_tresor_vfs", "vfs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 200 } };
+	Child_state tresor_vfs { children, "se_tresor_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state tresor_trust_anchor_vfs { children, "se_tresor_trust_anchor_vfs", "vfs", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state rump_vfs { children, "rump_vfs", "vfs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state sync_to_tresor_vfs_init { children, "sync_to_tresor_vfs_init", "se_sync_to_tresor_vfs_init", Ram_quota { 8 * 1024 * 1024 }, Cap_quota { 100 } };
@@ -194,6 +194,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Child_state rekey_fs_query { children, "rekey_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state lock_fs_tool { children, "lock_fs_tool", "fs_tool", Ram_quota { 6 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	Child_state e2fsck { children, "e2fsck", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Report_xml_handler image_fs_query_listing_handler { *this, &Main::handle_image_fs_query_listing };
 	Report_xml_handler client_fs_query_listing_handler { *this, &Main::handle_client_fs_query_listing };
 	Report_xml_handler extend_fs_query_listing_handler { *this, &Main::handle_extend_fs_query_listing };
@@ -314,43 +315,9 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 		update_sandbox_config();
 		log("Main::update_sandbox_config START!");
 
-		set_state(SETUP_CREATE_IMAGE);
+		set_state(UNLOCK_INIT_TRUST_ANCHOR); // SETUP_CREATE_IMAGE);
 		update_sandbox_config();
-		log("SETUP_CREATE_IMAGE DONE!");
-
-		// set_state(SETUP_INIT_TRUST_ANCHOR);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("SETUP_INIT_TRUST_ANCHOR DONE!");
-
-		// set_state(SETUP_TRESOR_INIT);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("SETUP_TRESOR_INIT DONE!");
-
-		// set_state(SETUP_START_TRESOR);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("SETUP_START_TRESOR DONE!");
-
-		// set_state(SETUP_MKE2FS);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("SETUP_MKE2FS DONE!");
-
-		// set_state(SETUP_READ_FS_SIZE);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("SETUP_READ_FS_SIZE DONE!");
-
-		// set_state(UNLOCKED);
-		// handle_sandbox_state();
-		// // update_sandbox_config();
-		// log("UNLOCKED DONE!");
-		
-		// set_state(UNLOCK_INIT_TRUST_ANCHOR);
-		// update_sandbox_config();
-		// log("UNLOCK_INIT_TRUST_ANCHOR DONE!");
+		log("UNLOCK_INIT_TRUST_ANCHOR"); // SETUP_CREATE_IMAGE DONE!");
 	}
 };
 
@@ -676,7 +643,7 @@ void Main::handle_sandbox_state()
 	case SETUP_START_TRESOR:
 		if (child_succeeded(sync_to_tresor_vfs_init, sandbox_state.xml)) {
 			log("SETUP_START_TRESOR");
-			set_state(SETUP_MKE2FS);
+			set_state(SETUP_MKE2FS); // SETUP_E2FSCK);
 			update_sandbox_cfg = true;
 		}
 		break;
@@ -684,9 +651,23 @@ void Main::handle_sandbox_state()
 	case UNLOCK_START_TRESOR:
 		if (child_succeeded(sync_to_tresor_vfs_init, sandbox_state.xml)) {
 			log("UNLOCK_START_TRESOR");
-			set_state(UNLOCK_READ_FS_SIZE);
+			set_state(SETUP_E2FSCK); // UNLOCK_READ_FS_SIZE);
 			update_sandbox_cfg = true;
 		}
+		break;
+
+	case SETUP_E2FSCK:
+		with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
+
+			if (code == 0 || code == 1 || code == 2) {
+				set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+			} else {
+				set_state(SETUP_INIT_TRUST_ANCHOR); // SETUP_MKE2FS);
+			}
+
+			update_sandbox_cfg = true;
+		});
+
 		break;
 
 	case SETUP_MKE2FS:
@@ -845,6 +826,11 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		break;
 
 	case UNLOCK_START_TRESOR:
+		// gen_parent_provides_and_report_nodes(xml);
+		// gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		// gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		// gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
+		// gen_e2fsck_start_node(xml, e2fsck);
 
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
@@ -912,8 +898,16 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_sync_to_tresor_vfs_init_start_node(xml, sync_to_tresor_vfs_init);
 		break;
 
-	case SETUP_MKE2FS:
+	case SETUP_E2FSCK:
+		log("SETUP_E2FSCK");
+		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
+		gen_e2fsck_start_node(xml, e2fsck);
+		break;
 
+	case SETUP_MKE2FS:
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);

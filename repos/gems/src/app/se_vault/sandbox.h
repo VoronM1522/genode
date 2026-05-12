@@ -136,7 +136,9 @@ namespace File_vault {
 					});
 				});
 				gen_arg(xml, "mkfs.ext3");
-				// gen_arg(xml, "-F");
+				gen_arg(xml, "-F");
+				gen_arg(xml, "-b");
+				gen_arg(xml, "4096");
 				// gen_arg(xml, "-O");
 				// gen_arg(xml, "^metadata_csum");
 				gen_arg(xml, "/dev/block");
@@ -190,15 +192,16 @@ namespace File_vault {
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
+				xml.attribute("verbose", "yes");
 				xml.node("vfs", [&] {
 					xml.node("fs", [&] {
-						xml.attribute("buffer_size", "1M");
+						xml.attribute("buffer_size", "16M"); // 1
 						xml.attribute("label", "tresor_fs -> /");
 					});
 					gen_named_node(xml, "tresor_crypto_aes_cbc", "crypto", [] { });
 					gen_named_node(xml, "dir", "trust_anchor", [&] {
 						xml.node("fs", [&] {
-							xml.attribute("buffer_size", "1M");
+							xml.attribute("buffer_size", "16M"); // 1
 							xml.attribute("label", "trust_anchor -> /");
 						});
 					});
@@ -217,7 +220,7 @@ namespace File_vault {
 				gen_vfs_policy(xml, "rekey_fs_query -> ", "/dev", true);
 				gen_vfs_policy(xml, "lock_fs_query -> ", "/dev", true);
 				gen_vfs_policy(xml, "vfs_block -> ", "/dev/tresor/current", true);
-				gen_vfs_policy(xml, "snapper -> ", "/dev/tresor/current", true);
+				// gen_vfs_policy(xml, "snapper -> ", "/dev/tresor/current", true);
 				gen_vfs_policy(xml, "client_fs_query -> ", "/dev/tresor/current", false);
 				gen_vfs_policy(xml, "sync_to_tresor_vfs_init -> ", "/dev", true);
 			});
@@ -227,6 +230,8 @@ namespace File_vault {
 				gen_common_routes(xml);
 			});
 		});
+
+		log("gen_tresor_vfs_start_node DONE");
 	}
 
 	void gen_tresor_trust_anchor_vfs_start_node(Xml_generator &xml, Child_state const &child,
@@ -238,13 +243,14 @@ namespace File_vault {
 				xml.node("vfs", [&] {
 					gen_named_node(xml, "dir", "storage_dir", [&] {
 						xml.node("fs", [&] {
-							xml.attribute("buffer_size", "1M");
+							xml.attribute("buffer_size", "16M"); // 1
 							xml.attribute("label", "storage_dir -> /");
 						});
 					});
 					gen_named_node(xml, "dir", "dev", [&] {
 						gen_named_node(xml, "tresor_trust_anchor", "tresor_trust_anchor", [&] {
-							xml.attribute("storage_dir", "/storage_dir"); });
+							xml.attribute("storage_dir", "/storage_dir"); 
+						});
 						if (jent_avail)
 							gen_named_node(xml, "jitterentropy", "jitterentropy", [&] { });
 						else {
@@ -300,7 +306,7 @@ namespace File_vault {
 					
 					xml.node("rump", [&] {
 						xml.attribute("fs", "ext2fs");
-						xml.attribute("ram", "20M");
+						xml.attribute("ram", "256M");
 					});
 				});
 				xml.node("default-policy", [&] {
@@ -375,10 +381,14 @@ namespace File_vault {
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "Block");
 			xml.node("config", [&] {
+				xml.attribute("verbose", "yes");
 				xml.node("vfs", [&] {
-					xml.node("fs", [&] { xml.attribute("buffer_size", "1M"); });
+					xml.node("fs", [&] { 
+						xml.attribute("buffer_size", "16M"); // 1
+					});
 				});
 				gen_policy("mke2fs -> default");
+				gen_policy("e2fsck -> ");
 				gen_policy("resize2fs -> default");
 				gen_policy("rump_vfs -> ");
 			});
@@ -387,6 +397,8 @@ namespace File_vault {
 				gen_common_routes(xml);
 			});
 		});
+
+		log("gen_tresor_vfs_block_start_node DONE");
 	}
 
 //  <service name="File_system" label_suffix="ta -> /"> <child name="usb_sec_fs"/> </service>
@@ -437,7 +449,9 @@ namespace File_vault {
 				});
 				xml.node("crypto", [&] { xml.attribute("path", "/crypto"); });
 				xml.node("vfs", [&] {
-					xml.node("fs", [&] { xml.attribute("buffer_size", "1M"); });
+					xml.node("fs", [&] {
+						xml.attribute("buffer_size", "16M"); // 1
+					});
 					gen_named_node(xml, "tresor_crypto_aes_cbc", "crypto", [] { });
 					gen_named_node(xml, "dir", "trust_anchor", [&] {
 						xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); });
@@ -547,6 +561,48 @@ namespace File_vault {
 	void gen_rekey_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
 		log("gen_rekey_fs_query_start_node");
 		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
+	}
+
+	// [init -> se_vault -> mke2fs] Creating filesystem with 524288 4k blocks and 131072 inodes
+	// [init -> se_vault -> mke2fs] Filesystem UUID: d99071c0-ee86-11e7-9de7-5b2f9ecf2653
+	// [init -> se_vault -> mke2fs] Superblock backups stored on blocks:
+	// [init -> se_vault -> mke2fs]    32768, 98304, 163840, 229376, 294912
+
+	void gen_e2fsck_start_node(Xml_generator &xml, Child_state const &child) {
+		child.gen_start_node(xml, [&] {
+			xml.node("config", [&] {
+				xml.attribute("verbose", "yes");
+				// -p — автоматическое исправление без вопросов
+				// -f — принудительная проверка даже если ФС чистая
+				// /dev/block — устройство
+				xml.node("libc", [&] {
+					xml.attribute("stdout", "/dev/log");
+					xml.attribute("stderr", "/dev/log");
+				});
+				xml.node("vfs", [&] {
+					xml.node("dir", [&] {
+						xml.attribute("name", "dev");
+						xml.node("log", [&] {});
+						xml.node("null", [&] {});
+						xml.node("block", [&] {
+							xml.attribute("name", "block");
+						});
+					});
+				});
+				xml.node("arg", [&] { xml.attribute("value", "e2fsck"); });
+				// xml.node("arg", [&] { xml.attribute("value", "-b"); });
+				// xml.node("arg", [&] { xml.attribute("value", "512"); });	
+				xml.node("arg", [&] { xml.attribute("value", "-p"); });  // auto-fix
+				xml.node("arg", [&] { xml.attribute("value", "-f"); });  // force check
+				xml.node("arg", [&] { xml.attribute("value", "/dev/block"); });
+			});
+			xml.node("route", [&] {
+				gen_child_route(xml, "vfs_block", "Block");
+				gen_common_routes(xml);
+			});
+		});		
+
+		log("gen_e2fsck_start_node DONE!");
 	}
 
 	void gen_snapper_start_node(Xml_generator &xml) {
