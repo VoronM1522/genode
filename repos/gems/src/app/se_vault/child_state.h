@@ -23,7 +23,7 @@
 #include <base/quota_guard.h>
 
 /* local includes */
-#include <file_vault/types.h>
+#include <se_vault/types.h>
 
 namespace File_vault { class Child_state; }
 

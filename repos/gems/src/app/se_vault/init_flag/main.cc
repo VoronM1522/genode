@@ -27,61 +27,25 @@ struct Main
 	Root_directory vfs { env, heap, config.xml().sub_node("vfs") };
 	Vfs::File_system &fs { vfs.root_dir() };
 	Directory::Path path { config.xml().attribute_value("path", Directory::Path { }) };
-	Number_of_bytes size { config.xml().attribute_value("size", Number_of_bytes { }) };
 	Directory::Path init_path { File_vault::File_path(path.string(), ".init").string() };
 
 	Main(Env &env) : env(env)
 	{
-		bool initialized = false;
-		unsigned mode = Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
-		Vfs::Directory_service::Stat stat { };
-
-		// Check initialization
-		if (fs.stat(init_path.string(), stat) == Vfs::Directory_service::STAT_OK) {
-			initialized = true;
-			log("Initialized");
-		} else {
-			log("Not initialized");
-		}
-
-		if (fs.stat(path.string(), stat) != Vfs::Directory_service::STAT_OK) {
-			mode |= Vfs::Directory_service::OPEN_MODE_CREATE;
-		} else if (stat.size >= size) {
-			// log("File ", path, " exists, size: ", stat.size);
-			if (initialized) {
-				env.parent().exit(0);
-			} else {
-				env.parent().exit(1);
-			}			
-		} 
-		// else {
-		// 	log("Create file, size: ", size);
-		// }
-
+		unsigned mode = Vfs::Directory_service::OPEN_MODE_CREATE; // | Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
 		Vfs::Vfs_handle *handle_ptr = nullptr;
 		auto res = fs.open(path.string(), mode, &handle_ptr, heap);
 
 		if (res != Vfs::Directory_service::OPEN_OK || (handle_ptr == nullptr)) {
-			// log("res: ", (int)res, "; handle_ptr: ", handle_ptr);
 			error("failed to create file '", path, "'");
 			env.parent().exit(-1);
 		}
 
-		auto truncate_res = handle_ptr->fs().ftruncate(handle_ptr, size);
+		auto truncate_res = handle_ptr->fs().ftruncate(handle_ptr, 0);
 
 		// Проверить case'ы
 		switch (truncate_res) {
 		case Vfs::File_io_service::FTRUNCATE_OK:
 			log("FTRUNCATE_OK");
-			if (fs.stat(path.string(), stat) != Vfs::Directory_service::STAT_OK) {
-				log("Open check failed");
-				env.parent().exit(-1);
-			} else if (stat.size < size) {
-				log("Size check failed");
-				env.parent().exit(-1);
-			} else {
-				log("Open and size checks passed");
-			}
 			break;
 		case Vfs::File_io_service::FTRUNCATE_ERR_NO_SPACE:
 			error("no space left");
@@ -95,7 +59,7 @@ struct Main
 		}
 
 		handle_ptr->ds().close(handle_ptr);
-		env.parent().exit(1);
+		env.parent().exit(0);
 	}
 };
 
