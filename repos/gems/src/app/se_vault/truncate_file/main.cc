@@ -53,7 +53,10 @@ struct Main
 			} else {
 				env.parent().exit(1);
 			}			
-		} 
+		} else if (initialized) {
+			fs.unlink(init_path.string());
+			log("Removed init marker");
+		}
 		// else {
 		// 	log("Create file, size: ", size);
 		// }
