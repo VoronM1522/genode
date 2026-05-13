@@ -33,6 +33,13 @@ struct Main
 	{
 		unsigned mode = Vfs::Directory_service::OPEN_MODE_CREATE | Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
 		Vfs::Vfs_handle *handle_ptr = nullptr;
+		Vfs::Directory_service::Stat stat { };
+
+		if (fs.stat(init_path.string(), stat) == Vfs::Directory_service::STAT_OK) {
+			log("Initialized");
+			env.parent().exit(0);
+		}
+
 		auto res = fs.open(init_path.string(), mode, &handle_ptr, heap);
 
 		log("INIT_FILE: ", init_path.string());
