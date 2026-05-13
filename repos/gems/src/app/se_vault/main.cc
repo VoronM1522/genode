@@ -669,6 +669,7 @@ void Main::handle_sandbox_state()
 
 	case SETUP_INIT_FLAG:
 		update_sandbox_cfg = true;
+		break;
 
 	case UNLOCK_INIT_TRUST_ANCHOR:
 	{
