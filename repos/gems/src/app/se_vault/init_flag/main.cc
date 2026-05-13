@@ -33,10 +33,12 @@ struct Main
 	{
 		unsigned mode = Vfs::Directory_service::OPEN_MODE_CREATE; // | Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
 		Vfs::Vfs_handle *handle_ptr = nullptr;
-		auto res = fs.open(path.string(), mode, &handle_ptr, heap);
+		auto res = fs.open(init_path.string(), mode, &handle_ptr, heap);
+
+		log("INIT_FILE: ", init_path.string());
 
 		if (res != Vfs::Directory_service::OPEN_OK || (handle_ptr == nullptr)) {
-			error("failed to create file '", path, "'");
+			error("failed to create file '", init_path, "'");
 			env.parent().exit(-1);
 		}
 
