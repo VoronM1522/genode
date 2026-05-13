@@ -35,4 +35,4 @@ struct Main : Vfs::Env::User
 	}
 };
 
-void Component::construct(Env &env) { log("AAAAAAAA"); static Main main(env); log("AAAAAAAA"); }
+void Component::construct(Env &env) { static Main main(env); }
