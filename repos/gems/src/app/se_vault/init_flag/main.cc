@@ -31,7 +31,7 @@ struct Main
 
 	Main(Env &env) : env(env)
 	{
-		unsigned mode = Vfs::Directory_service::OPEN_MODE_CREATE; // | Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
+		unsigned mode = Vfs::Directory_service::OPEN_MODE_CREATE | Vfs::Directory_service::OPEN_MODE_RDWR; // OPEN_MODE_WRONLY;
 		Vfs::Vfs_handle *handle_ptr = nullptr;
 		auto res = fs.open(init_path.string(), mode, &handle_ptr, heap);
 
