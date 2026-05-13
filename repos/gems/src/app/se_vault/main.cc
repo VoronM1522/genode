@@ -659,7 +659,7 @@ void Main::handle_sandbox_state()
 
 	case SETUP_INIT_FLAG:
 		if (child_succeeded(init_flag, sandbox_state.xml)) {
-			set_state(UNLOCKED);
+			set_state(SETUP_READ_FS_SIZE); // UNLOCKED
 			update_sandbox_cfg = true;
 		}
 		
@@ -735,7 +735,7 @@ void Main::handle_sandbox_state()
 	case SETUP_MKE2FS:
 		if (child_succeeded(mke2fs, sandbox_state.xml)) {
 			log("SETUP_MKE2FS");
-			set_state(SETUP_READ_FS_SIZE);
+			set_state(SETUP_INIT_FLAG); // SETUP_READ_FS_SIZE);
 			update_sandbox_cfg = true;
 		}
 		break;
