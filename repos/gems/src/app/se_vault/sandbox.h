@@ -112,6 +112,17 @@ namespace File_vault {
 		});
 	}
 
+	// <!--
+   	// 	<dir name="dev">
+   	// 		<block name="block" block_buffer_count="128"/>
+   	// 	</dir>
+    //   <dir name="drive">
+    //     <lwext4 block_device="/dev/block" cache_write_back="yes"
+    //             expand_via_io="yes" writeable="yes"
+    //             reporting="yes"
+    //             external_cache_size="32M" report_cache="yes"/>
+    //   </dir>
+    // -->
 	void gen_mke2fs_start_node(Xml_generator &xml, Child_state const &child)
 	{
 		child.gen_start_node(xml, [&] {
@@ -126,7 +137,7 @@ namespace File_vault {
 					gen_named_node(xml, "dir", "dev", [&] {
 						gen_named_node(xml, "block", "block", [&] {
 							xml.attribute("label", "default");
-							xml.attribute("block_buffer_count", 128);
+							xml.attribute("block_buffer_count", "128");
 						});
 						gen_named_node(xml, "inline", "rtc", [&] {
 							xml.append("2018-01-01 00:01");
@@ -135,13 +146,20 @@ namespace File_vault {
 						xml.node("log", [&] {});
 					});
 				});
-				gen_arg(xml, "mkfs.ext3");
+				gen_arg(xml, "mkfs.ext4");
 				gen_arg(xml, "-F");
 				gen_arg(xml, "-b");
 				gen_arg(xml, "4096");
+				gen_arg(xml, "-O");
+				gen_arg(xml, "^metadata_csum");
+				gen_arg(xml, "/dev/block");
+				// gen_arg(xml, "mkfs.ext3");
+				// gen_arg(xml, "-F");
+				// gen_arg(xml, "-b");
+				// gen_arg(xml, "4096");
 				// gen_arg(xml, "-O");
 				// gen_arg(xml, "^metadata_csum");
-				gen_arg(xml, "/dev/block");
+				// gen_arg(xml, "/dev/block");
 			});
 			xml.node("route", [&] {
 				gen_child_route(xml, "vfs_block", "Block");
@@ -282,33 +300,33 @@ namespace File_vault {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
-					// xml.node("dir", [&] {
-					// 	xml.attribute("name", "dev");
-					// 	xml.node("block", [&] {
-					// 		xml.attribute("name", "block");
-					// 		xml.attribute("block_buffer_count", "128");
-					// 	});
-					// });
-					// xml.node("dir", [&] {
-					// 	xml.attribute("name", "root");
-					// 	xml.node("lwext4", [&] {
-					// 		xml.attribute("block_device", "/dev/block");
-					// 		xml.attribute("cache_write_back", "yes");
-					// 		xml.attribute("expand_via_io", "no");
-					// 		xml.attribute("writeable", "yes");
-					// 		xml.attribute("reporting", "no");
-					// 		xml.attribute("external_cache_size", "32M");
-					// 		xml.attribute("report_cache", "no");
-					// 	});
-					// });
-					
-					xml.node("rump", [&] {
-						xml.attribute("fs", "ext2fs");
-						xml.attribute("ram", "256M");
+					xml.node("dir", [&] {
+						xml.attribute("name", "dev");
+						xml.node("block", [&] {
+							xml.attribute("name", "block");
+							xml.attribute("block_buffer_count", "128");
+						});
 					});
+					xml.node("dir", [&] {
+						xml.attribute("name", "root");
+						xml.node("lwext4", [&] {
+							xml.attribute("block_device", "/dev/block");
+							xml.attribute("cache_write_back", "no"); // yes
+							xml.attribute("expand_via_io", "no");
+							xml.attribute("writeable", "yes");
+							xml.attribute("reporting", "no");
+							// xml.attribute("external_cache_size", "32M");
+							xml.attribute("report_cache", "no");
+						});
+					});
+					
+					// xml.node("rump", [&] {
+					// 	xml.attribute("fs", "ext2fs");
+					// 	xml.attribute("ram", "256M");
+					// });
 				});
 				xml.node("default-policy", [&] {
-					xml.attribute("root", "/");
+					xml.attribute("root", "/root");
 					xml.attribute("writeable", "yes");
 				});
 			});
@@ -380,6 +398,7 @@ namespace File_vault {
 		log("gen_sync_to_tresor_vfs_init_start_node DONE");
 	}
 
+	
 	void gen_tresor_vfs_block_start_node(Xml_generator &xml, Child_state const &child)
 	{
 		auto gen_policy = [&] (char const *label) {
@@ -573,10 +592,6 @@ namespace File_vault {
 		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
 	}
 
-	// [init -> se_vault -> mke2fs] Creating filesystem with 524288 4k blocks and 131072 inodes
-	// [init -> se_vault -> mke2fs] Filesystem UUID: d99071c0-ee86-11e7-9de7-5b2f9ecf2653
-	// [init -> se_vault -> mke2fs] Superblock backups stored on blocks:
-	// [init -> se_vault -> mke2fs]    32768, 98304, 163840, 229376, 294912
 
 	void gen_e2fsck_start_node(Xml_generator &xml, Child_state const &child) {
 		child.gen_start_node(xml, [&] {

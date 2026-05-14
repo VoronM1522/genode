@@ -180,7 +180,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Child_state resize2fs { children, "resize2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state tresor_vfs { children, "se_tresor_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state tresor_trust_anchor_vfs { children, "se_tresor_trust_anchor_vfs", "vfs", Ram_quota { 256 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state rump_vfs { children, "rump_vfs", "vfs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 200 } };
+	Child_state rump_vfs { children, "rump_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state sync_to_tresor_vfs_init { children, "sync_to_tresor_vfs_init", "se_sync_to_tresor_vfs_init", Ram_quota { 8 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state truncate_file { children, "truncate_file", "se_truncate_file", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state init_flag { children, "init_flag", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
@@ -883,7 +883,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 			BLOCK_SIZE * tresor_num_blocks(
 				NR_OF_SUPERBLOCK_SLOTS,
 				TRESOR_VBD_MAX_LVL + 1, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE), // ui_config->client_fs_size),
-				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 5)
+				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 500)
 			)
 		); // ui_config->journaling_buf_size)));
 		break;
@@ -975,7 +975,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	{
 		Tresor::Superblock_configuration sb_config {
 			Tree_configuration(TRESOR_VBD_MAX_LVL, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE)), // ui_config->client_fs_size)),
-			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 5)) // ui_config->journaling_buf_size))
+			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 500)) // ui_config->journaling_buf_size))
 		};
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
