@@ -931,6 +931,9 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	
 	case SETUP_INIT_FLAG:
 		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
 		gen_init_flag_start_node(xml, init_flag, File_path("/tresor/", image_name).string());
 		break;
 
