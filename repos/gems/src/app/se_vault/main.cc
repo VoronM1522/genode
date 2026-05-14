@@ -429,7 +429,7 @@ void Main::handle_client_fs_query_listing(Xml_node const &listing)
 		with_file(listing, "data", [&] (Xml_node const &file) {
 			// ui_report.capacity = file.attribute_value("size", 0UL);
 			// ui_report_changed = true;
-			set_state(SETUP_INIT_FLAG);
+			set_state(UNLOCKED);
 			Signal_transmitter(state_handler).submit();
 		});
 
