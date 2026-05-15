@@ -311,7 +311,7 @@ namespace File_vault {
 					// 	xml.node("lwext4", [&] {
 					// 		xml.attribute("block_device", "/dev/block");
 					// 		xml.attribute("cache_write_back", "no"); // yes
-					// 		xml.attribute("expand_via_io", "no");
+					// 		xml.attribute("expand_via_io", "yes");
 					// 		xml.attribute("writeable", "yes");
 					// 		xml.attribute("reporting", "no");
 					// 		// xml.attribute("external_cache_size", "32M");
@@ -321,7 +321,7 @@ namespace File_vault {
 					
 					xml.node("rump", [&] {
 						xml.attribute("fs", "ext2fs");
-						xml.attribute("ram", "16M");
+						xml.attribute("ram", "8M");
 					});
 				});
 				xml.node("default-policy", [&] {
