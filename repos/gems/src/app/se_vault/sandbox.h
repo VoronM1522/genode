@@ -154,7 +154,7 @@ namespace File_vault {
 				// gen_arg(xml, "^metadata_csum");
 				// gen_arg(xml, "/dev/block");
 
-				gen_arg(xml, "mkfs.ext3");
+				gen_arg(xml, "mkfs.ext2");
 				gen_arg(xml, "-F");
 				gen_arg(xml, "-b");
 				gen_arg(xml, "4096");
