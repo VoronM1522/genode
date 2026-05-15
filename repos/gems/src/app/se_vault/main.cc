@@ -633,8 +633,8 @@ void Main::handle_sandbox_state()
 				set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
 				log("E2FSCK: UNLOCK_READ_FS_SIZE");
 			} else {
-				set_state(UNINITIALIZED); // SETUP_MKE2FS);
-				log("E2FSCK: UNINITIALIZED");
+				set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
+				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
 			}
 
 			update_sandbox_cfg = true;
@@ -883,7 +883,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 			BLOCK_SIZE * tresor_num_blocks(
 				NR_OF_SUPERBLOCK_SLOTS,
 				TRESOR_VBD_MAX_LVL + 1, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE), // ui_config->client_fs_size),
-				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 500)
+				TRESOR_FREE_TREE_MAX_LVL + 1, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 5)
 			)
 		); // ui_config->journaling_buf_size)));
 		break;
@@ -975,7 +975,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	{
 		Tresor::Superblock_configuration sb_config {
 			Tree_configuration(TRESOR_VBD_MAX_LVL, TRESOR_VBD_DEGREE, tresor_tree_num_leaves(CLIENT_FS_SIZE)), // ui_config->client_fs_size)),
-			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 500)) // ui_config->journaling_buf_size))
+			Tree_configuration(TRESOR_FREE_TREE_MAX_LVL, TRESOR_FREE_TREE_DEGREE, tresor_tree_num_leaves(min_journal_buf(CLIENT_FS_SIZE) * 5)) // ui_config->journaling_buf_size))
 		};
 		gen_parent_provides_and_report_nodes(xml);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
