@@ -28,7 +28,7 @@ namespace File_vault {
 	static constexpr size_t MIN_CLIENT_FS_SIZE = 100 * 1024;
 	static constexpr size_t MIN_PASSPHRASE_LENGTH = 8;
 	static constexpr size_t MIN_CAPACITY = 100 * 1024;
-	static constexpr uint64_t CLIENT_FS_SIZE = 256ULL * 1024 * 1024; // 256 Mb //  2ULL * 1024 * 1024 * 1024; // 2 Gb //
+	static constexpr uint64_t CLIENT_FS_SIZE =  4ULL * 1024 * 1024 * 1024; // 4 Gb // 512ULL * 1024 * 1024; // 512 Mb
 
 	using Node_name = String<32>;
 	using File_path = String<32>;

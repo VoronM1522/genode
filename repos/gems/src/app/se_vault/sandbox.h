@@ -154,7 +154,7 @@ namespace File_vault {
 				// gen_arg(xml, "^metadata_csum");
 				// gen_arg(xml, "/dev/block");
 
-				gen_arg(xml, "mkfs.ext2");
+				gen_arg(xml, "mkfs.ext3");
 				gen_arg(xml, "-F");
 				gen_arg(xml, "-b");
 				gen_arg(xml, "4096");
@@ -299,33 +299,33 @@ namespace File_vault {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
-					// xml.node("dir", [&] {
-					// 	xml.attribute("name", "dev");
-					// 	xml.node("block", [&] {
-					// 		xml.attribute("name", "block");
-					// 		xml.attribute("block_buffer_count", "128");
-					// 	});
-					// });
-					// xml.node("dir", [&] {
-					// 	xml.attribute("name", "root");
-					// 	xml.node("lwext4", [&] {
-					// 		xml.attribute("block_device", "/dev/block");
-					// 		xml.attribute("cache_write_back", "no"); // yes
-					// 		xml.attribute("expand_via_io", "yes");
-					// 		xml.attribute("writeable", "yes");
-					// 		xml.attribute("reporting", "no");
-					// 		// xml.attribute("external_cache_size", "32M");
-					// 		xml.attribute("report_cache", "no");
-					// 	});
-					// });
-					
-					xml.node("rump", [&] {
-						xml.attribute("fs", "ext2fs");
-						xml.attribute("ram", "8M");
+					xml.node("dir", [&] {
+						xml.attribute("name", "dev");
+						xml.node("block", [&] {
+							xml.attribute("name", "block");
+							xml.attribute("block_buffer_count", "128");
+						});
 					});
+					xml.node("dir", [&] {
+						xml.attribute("name", "root");
+						xml.node("lwext4", [&] {
+							xml.attribute("block_device", "/dev/block");
+							xml.attribute("cache_write_back", "no"); // yes
+							xml.attribute("expand_via_io", "yes");
+							xml.attribute("writeable", "yes");
+							xml.attribute("reporting", "no");
+							// xml.attribute("external_cache_size", "32M");
+							xml.attribute("report_cache", "no");
+						});
+					});
+					
+					// xml.node("rump", [&] {
+					// 	xml.attribute("fs", "ext2fs");
+					// 	xml.attribute("ram", "8M");
+					// });
 				});
 				xml.node("default-policy", [&] {
-					xml.attribute("root", "/");
+					xml.attribute("root", "/root");
 					xml.attribute("writeable", "yes");
 				});
 			});

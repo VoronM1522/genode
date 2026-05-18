@@ -627,18 +627,22 @@ void Main::handle_sandbox_state()
 		break;
 
 	case E2FSCK:
-		with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
+		// with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
 
-			if (code == 0 || code == 1 || code == 2) {
-				set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
-				log("E2FSCK: UNLOCK_READ_FS_SIZE");
-			} else {
-				set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
-				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
-			}
+		// 	if (code == 0 || code == 1 || code == 2) {
+		// 		set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+		// 		log("E2FSCK: UNLOCK_READ_FS_SIZE");
+		// 	} else {
+		// 		set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
+		// 		log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
+		// 	}
 
-			update_sandbox_cfg = true;
-		});
+		// 	update_sandbox_cfg = true;
+		// });
+
+		set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+		log("E2FSCK: UNLOCK_READ_FS_SIZE");
+		update_sandbox_cfg = true;
 
 		break;
 	case SETUP_INIT_TRUST_ANCHOR:
@@ -917,7 +921,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
-		gen_e2fsck_start_node(xml, e2fsck);
+		// gen_e2fsck_start_node(xml, e2fsck);
 		break;
 
 	case SETUP_READ_FS_SIZE:
