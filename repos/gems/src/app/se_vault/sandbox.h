@@ -293,7 +293,7 @@ namespace File_vault {
 //               reporting="no"
 //               external_cache_size="32M" report_cache="yes"/>
 
-	void gen_rump_vfs_start_node(Xml_generator &xml, Child_state const &child)
+	void gen_system_vfs_start_node(Xml_generator &xml, Child_state const &child)
 	{
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "File_system");
@@ -420,7 +420,7 @@ namespace File_vault {
 				gen_policy("mke2fs -> default");
 				gen_policy("e2fsck -> ");
 				gen_policy("resize2fs -> default");
-				gen_policy("rump_vfs -> ");
+				gen_policy("system_vfs -> ");
 			});
 			xml.node("route", [&] {
 				gen_child_route(xml, "se_tresor_vfs", "File_system");
@@ -617,7 +617,7 @@ namespace File_vault {
 				// xml.node("arg", [&] { xml.attribute("value", "-b"); });
 				// xml.node("arg", [&] { xml.attribute("value", "512"); });	
 				xml.node("arg", [&] { xml.attribute("value", "-p"); });  // auto-fix
-				xml.node("arg", [&] { xml.attribute("value", "-f"); });  // force check
+				// xml.node("arg", [&] { xml.attribute("value", "-f"); });  // force check
 				xml.node("arg", [&] { xml.attribute("value", "/dev/block"); });
 			});
 			xml.node("route", [&] {

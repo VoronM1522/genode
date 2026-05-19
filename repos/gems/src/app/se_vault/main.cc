@@ -180,7 +180,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Child_state resize2fs { children, "resize2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state tresor_vfs { children, "se_tresor_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state tresor_trust_anchor_vfs { children, "se_tresor_trust_anchor_vfs", "vfs", Ram_quota { 256 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state rump_vfs { children, "rump_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
+	Child_state system_vfs { children, "system_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state sync_to_tresor_vfs_init { children, "sync_to_tresor_vfs_init", "se_sync_to_tresor_vfs_init", Ram_quota { 8 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state truncate_file { children, "truncate_file", "se_truncate_file", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state init_flag { children, "init_flag", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
@@ -627,22 +627,22 @@ void Main::handle_sandbox_state()
 		break;
 
 	case E2FSCK:
-		// with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
+		with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
 
-		// 	if (code == 0 || code == 1 || code == 2) {
-		// 		set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
-		// 		log("E2FSCK: UNLOCK_READ_FS_SIZE");
-		// 	} else {
-		// 		set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
-		// 		log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
-		// 	}
+			if (code == 0 || code == 1 || code == 2) {
+				set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+				log("E2FSCK: UNLOCK_READ_FS_SIZE");
+			} else {
+				set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
+				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
+			}
 
-		// 	update_sandbox_cfg = true;
-		// });
+			update_sandbox_cfg = true;
+		});
 
-		set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
-		log("E2FSCK: UNLOCK_READ_FS_SIZE");
-		update_sandbox_cfg = true;
+		// set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+		// log("E2FSCK: UNLOCK_READ_FS_SIZE");
+		// update_sandbox_cfg = true;
 
 		break;
 	case SETUP_INIT_TRUST_ANCHOR:
@@ -752,7 +752,7 @@ void Main::handle_sandbox_state()
 			break;
 		}
 
-		with_child(sandbox_state.xml, rump_vfs, [&] (Xml_node const &child) {
+		with_child(sandbox_state.xml, system_vfs, [&] (Xml_node const &child) {
 			log("UNLOCKED");
 			child.with_optional_sub_node("provided", [&] (Xml_node const &provided) {
 				provided.for_each_sub_node("session", [&] (Xml_node const &session) {
@@ -921,7 +921,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
-		// gen_e2fsck_start_node(xml, e2fsck);
+		gen_e2fsck_start_node(xml, e2fsck);
 		break;
 
 	case SETUP_READ_FS_SIZE:
@@ -1015,8 +1015,8 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		if (extend_state != Extend::INACTIVE) //  && ui_config->extend->tree == Ui_config::Extend::VIRTUAL_BLOCK_DEVICE)
 			break;
 
-		gen_child_service_policy(xml, "File_system", rump_vfs);
-		gen_rump_vfs_start_node(xml, rump_vfs);
+		gen_child_service_policy(xml, "File_system", system_vfs);
+		gen_system_vfs_start_node(xml, system_vfs);
 		break;
 
 	case LOCK_PENDING:
@@ -1031,7 +1031,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	case START_LOCKING:
 
 		gen_parent_provides_and_report_nodes(xml);
-		gen_child_service_policy(xml, "File_system", rump_vfs);
+		gen_child_service_policy(xml, "File_system", system_vfs);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
@@ -1041,7 +1041,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	case LOCKING:
 
 		gen_parent_provides_and_report_nodes(xml);
-		gen_child_service_policy(xml, "File_system", rump_vfs);
+		gen_child_service_policy(xml, "File_system", system_vfs);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
