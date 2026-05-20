@@ -38,6 +38,7 @@ using namespace File_vault;
 
 using Service_name = String<64>;
 
+// check
 static bool has_name(Xml_node const &node, Node_name const &name) {
 	return node.attribute_value("name", Node_name { }) == name; }
 
@@ -78,6 +79,7 @@ static bool child_succeeded(Child_state const &child, Xml_node const &sandbox)
 }
 
 
+// check
 static void with_file(Xml_node const &fs_query_listing, File_path const &name, auto const &fn)
 {
 	bool done = false;
@@ -89,6 +91,7 @@ static void with_file(Xml_node const &fs_query_listing, File_path const &name, a
 }
 
 
+// check
 static bool file_starts_with(Xml_node const &fs_query_listing, File_path const &file_name, auto const &str)
 {
 	bool result = false;
@@ -99,6 +102,7 @@ static bool file_starts_with(Xml_node const &fs_query_listing, File_path const &
 }
 
 
+// check
 struct Report_session_component : Session_object<Report::Session>
 {
 	struct Handler_base : Interface, Genode::Noncopyable
@@ -145,6 +149,7 @@ struct Report_session_component : Session_object<Report::Session>
 
 struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 {
+	// check
 	using Report_service = Sandbox::Local_service<Report_session_component>;
 	using Report_xml_handler = Report_session_component::Xml_handler<Main>;
 
@@ -152,21 +157,35 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	enum State {
 		INVALID, SETUP_FILE, UNINITIALIZED, SETUP_CREATE_IMAGE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
-		SETUP_START_TRESOR, E2FSCK, SETUP_MKE2FS, SETUP_READ_FS_SIZE, SETUP_INIT_FLAG, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
-		UNLOCK_START_TRESOR, UNLOCK_READ_FS_SIZE, UNLOCKED, LOCK_PENDING, START_LOCKING, LOCKING
+		SETUP_START_TRESOR, E2FSCK, SETUP_MKE2FS, SETUP_INIT_FLAG, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
+		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING, LOCKING // , SETUP_READ_FS_SIZE, UNLOCK_READ_FS_SIZE, LOCK_PENDING
 	};
 
-	struct Extend { 
-		enum State {
-			INACTIVE, ADAPT_IMAGE_SIZE, WAIT_FOR_TRESOR, SEND_REQUEST, REQUEST_IN_PROGRESS, READ_FS_SIZE, RESIZE2FS
-		}; 
-	};
+	// struct Extend { 
+	// 	enum State {
+	// 		INACTIVE, ADAPT_IMAGE_SIZE, WAIT_FOR_TRESOR, SEND_REQUEST, REQUEST_IN_PROGRESS, READ_FS_SIZE, RESIZE2FS
+	// 	}; 
+	// };
 
-	struct Rekey {
-		enum State {
-			INACTIVE, WAIT_FOR_TRESOR, SEND_REQUEST, REQUEST_IN_PROGRESS
-		};
-	};
+	// struct Rekey {
+	// 	enum State {
+	// 		INACTIVE, WAIT_FOR_TRESOR, SEND_REQUEST, REQUEST_IN_PROGRESS
+	// 	};
+	// };
+
+
+
+
+
+
+
+	// rekey_fs_tool
+	// lock_fs_tool
+
+
+
+
+
 
 	Env &env;
 	State state { INVALID };
@@ -174,6 +193,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Timer::Connection timer { env };
 	Attached_rom_dataspace config_rom { env, "config" };
 	bool jent_avail { config_rom.xml().attribute_value("jitterentropy_available", true) };
+	bool fsck_avail { config_rom.xml().attribute_value("fsck_avail", true) };
 	Root_directory vfs { env, heap, config_rom.xml().sub_node("vfs") };
 	Registry<Child_state> children { };
 	Child_state mke2fs { children, "mke2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
@@ -185,30 +205,43 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Child_state truncate_file { children, "truncate_file", "se_truncate_file", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state init_flag { children, "init_flag", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state tresor_vfs_block { children, "vfs_block", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 100 } };
-	Child_state image_fs_query { children, "image_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
-	Child_state client_fs_query { children, "client_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	Child_state e2fsck { children, "e2fsck", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state tresor_init_trust_anchor { children, "se_tresor_init_trust_anchor", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state tresor_init { children, "se_tresor_init", Ram_quota { 4 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state extend_fs_tool { children, "extend_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state extend_fs_query { children, "extend_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
-	Child_state rekey_fs_tool { children, "rekey_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state rekey_fs_query { children, "rekey_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
-	Child_state lock_fs_tool { children, "lock_fs_tool", "fs_tool", Ram_quota { 6 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
-	Child_state e2fsck { children, "e2fsck", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
-	Report_xml_handler image_fs_query_listing_handler { *this, &Main::handle_image_fs_query_listing };
-	Report_xml_handler client_fs_query_listing_handler { *this, &Main::handle_client_fs_query_listing };
-	Report_xml_handler extend_fs_query_listing_handler { *this, &Main::handle_extend_fs_query_listing };
-	Report_xml_handler rekey_fs_query_listing_handler { *this, &Main::handle_rekey_fs_query_listing };
-	Report_xml_handler lock_fs_query_listing_handler { *this, &Main::handle_lock_fs_query_listing };
+
+
+	// Child_state extend_fs_tool { children, "extend_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
+	// Child_state extend_fs_query { children, "extend_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state rekey_fs_tool { children, "rekey_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
+	// Child_state rekey_fs_query { children, "rekey_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state lock_fs_tool { children, "lock_fs_tool", "fs_tool", Ram_quota { 6 * 1024 * 1024 }, Cap_quota { 200 } };
+	// Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state image_fs_query { children, "image_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state client_fs_query { children, "client_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	
+
+	// Report_xml_handler image_fs_query_listing_handler { *this, &Main::handle_image_fs_query_listing };
+	// Report_xml_handler client_fs_query_listing_handler { *this, &Main::handle_client_fs_query_listing };
+	// Report_xml_handler extend_fs_query_listing_handler { *this, &Main::handle_extend_fs_query_listing };
+	// Report_xml_handler rekey_fs_query_listing_handler { *this, &Main::handle_rekey_fs_query_listing };
+	// Report_xml_handler lock_fs_query_listing_handler { *this, &Main::handle_lock_fs_query_listing };
+
 	Sandbox sandbox { env, *this };
 	Report_service report_service { sandbox, *this };
-	Signal_handler<Main> state_handler { env.ep(), *this, &Main::handle_state };
-	Extend::State extend_state { Extend::INACTIVE };
-	Rekey::State rekey_state { Rekey::INACTIVE };
+	Signal_handler<Main> state_handler { env.ep(), *this, &Main::update_sandbox_config } // handle_state };
+	// Extend::State extend_state { Extend::INACTIVE };
+	// Rekey::State rekey_state { Rekey::INACTIVE };
 	Timer::One_shot_timeout<Main> unlock_retry_delay { timer, *this, &Main::handle_unlock_retry_delay };
-	File_path image_name { "tresor.img" };
-	Passphrase passphrase = "foobar";
+	// File_path image_name { "tresor.img" };
+
+	File_path image_name { config_rom.xml().attribute_value("image_name", File_path) };
+
+	Passphrase passphrase { config_rom.xml().attribute_value("passphrase", Passphrase()) };
+
+	// Xml_node const &config { _config_rom.xml() };
+
+	// 		Tresor::Passphrase const passphrase =
+	// 			config.attribute_value("passphrase", Tresor::Passphrase());
 	// Attached_rom_dataspace ui_config_rom { env, "ui_config" };
 	// Signal_handler<Main> ui_config_handler { env.ep(), *this, &Main::handle_ui_config_rom };
 	// Reconstructible<Ui_config> ui_config { };
@@ -224,30 +257,30 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 		Signal_transmitter(state_handler).submit();
 	}
 
-	void handle_sandbox_state_extend_and_rekey(Xml_node const &, bool &); // , bool &);
+	// void handle_sandbox_state_extend_and_rekey(Xml_node const &, bool &); // , bool &);
 
 	void generate_sandbox_config(Xml_generator &) const;
 
-	void gen_sandbox_cfg_extend_and_rekey(Xml_generator &) const;
+	// void gen_sandbox_cfg_extend_and_rekey(Xml_generator &) const;
 
-	void handle_image_fs_query_listing(Xml_node const &);
+	// void handle_image_fs_query_listing(Xml_node const &);
 
-	void handle_client_fs_query_listing(Xml_node const &);
+	// void handle_client_fs_query_listing(Xml_node const &);
 
-	void handle_extend_fs_query_listing(Xml_node const &);
+	// void handle_extend_fs_query_listing(Xml_node const &);
 
-	void handle_rekey_fs_query_listing(Xml_node const &);
+	// void handle_rekey_fs_query_listing(Xml_node const &);
 
-	void handle_lock_fs_query_listing(Xml_node const &node)
-	{
-		if (state != LOCKING)
-			return;
-		if (file_starts_with(node, "deinitialize", String<10>("succeeded"))) {
-			set_state(LOCKED);
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to deinitialize: operation failed at tresor");
-	}
+	// void handle_lock_fs_query_listing(Xml_node const &node)
+	// {
+	// 	if (state != LOCKING)
+	// 		return;
+	// 	if (file_starts_with(node, "deinitialize", String<10>("succeeded"))) {
+	// 		set_state(LOCKED);
+	// 		Signal_transmitter(state_handler).submit();
+	// 	} else
+	// 		error("failed to deinitialize: operation failed at tresor");
+	// }
 
 	// void handle_ui_config_rom() {
 	// 	ui_config_rom.update();
@@ -257,11 +290,11 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	// void handle_ui_config();
 
-	void handle_state()
-	{
-		update_sandbox_config();
-		// handle_ui_config();
-	}
+	// void handle_state()
+	// {
+	// 	update_sandbox_config();
+	// 	// handle_ui_config();
+	// }
 
 	void update_sandbox_config()
 	{
@@ -309,11 +342,13 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	void handle_sandbox_state() override;
 
+	// check
 	// Constructor
 	Main(Env &env) : env(env) {
 		// ui_config_rom.sigh(ui_config_handler);
 		// handle_ui_config_rom();
-		update_sandbox_config();
+
+		// update_sandbox_config();
 		log("Main::update_sandbox_config START!");
 
 		set_state(SETUP_FILE); // SETUP_CREATE_IMAGE);
@@ -352,152 +387,152 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 // }
 
 
-void Main::handle_extend_fs_query_listing(Xml_node const &node)
-{
-	if (state != UNLOCKED && state != LOCK_PENDING)
-		return;
+// void Main::handle_extend_fs_query_listing(Xml_node const &node)
+// {
+// 	if (state != UNLOCKED && state != LOCK_PENDING)
+// 		return;
 
-	switch (extend_state) {
-	case Extend::WAIT_FOR_TRESOR:
+// 	switch (extend_state) {
+// 	case Extend::WAIT_FOR_TRESOR:
 
-		if (file_starts_with(node, "extend", String<10>("succeeded")) ||
-		    file_starts_with(node, "extend", String<5>("none"))) {
+// 		if (file_starts_with(node, "extend", String<10>("succeeded")) ||
+// 		    file_starts_with(node, "extend", String<5>("none"))) {
 
-			extend_state = Extend::SEND_REQUEST;
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to extend: tresor not ready");
-		break;
+// 			extend_state = Extend::SEND_REQUEST;
+// 			Signal_transmitter(state_handler).submit();
+// 		} else
+// 			error("failed to extend: tresor not ready");
+// 		break;
 
-	case Extend::REQUEST_IN_PROGRESS:
+// 	case Extend::REQUEST_IN_PROGRESS:
 
-		if (file_starts_with(node, "extend", String<10>("succeeded"))) {
-			extend_state = Extend::READ_FS_SIZE;
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to extend: operation failed at tresor");
-		break;
+// 		if (file_starts_with(node, "extend", String<10>("succeeded"))) {
+// 			extend_state = Extend::READ_FS_SIZE;
+// 			Signal_transmitter(state_handler).submit();
+// 		} else
+// 			error("failed to extend: operation failed at tresor");
+// 		break;
 
-	default: break;
-	}
-}
-
-
-void Main::handle_rekey_fs_query_listing(Xml_node const &node)
-{
-	if (state != UNLOCKED && state != LOCK_PENDING)
-		return;
-
-	// bool ui_report_changed = false;
-	switch (rekey_state) {
-	case Rekey::WAIT_FOR_TRESOR:
-
-		if (file_starts_with(node, "rekey", String<10>("succeeded")) ||
-		    file_starts_with(node, "rekey", String<5>("none"))) {
-
-			rekey_state = Rekey::SEND_REQUEST;
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to rekey: tresor not ready");
-		break;
-
-	case Rekey::REQUEST_IN_PROGRESS:
-
-		if (file_starts_with(node, "rekey", String<10>("succeeded"))) {
-			// ui_report.rekey->finished = true;
-			// ui_report_changed = true;
-			rekey_state = Rekey::INACTIVE;
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to rekey: operation failed at tresor");
-		break;
-
-	default: break;
-	}
-	// if (ui_report_changed)
-	// 	generate_ui_report();
-}
+// 	default: break;
+// 	}
+// }
 
 
-void Main::handle_client_fs_query_listing(Xml_node const &listing)
-{
-	// bool ui_report_changed = false;
-	switch (state) {
-	case SETUP_READ_FS_SIZE:
-	case UNLOCK_READ_FS_SIZE:
+// void Main::handle_rekey_fs_query_listing(Xml_node const &node)
+// {
+// 	if (state != UNLOCKED && state != LOCK_PENDING)
+// 		return;
 
-		with_file(listing, "data", [&] (Xml_node const &file) {
-			// ui_report.capacity = file.attribute_value("size", 0UL);
-			// ui_report_changed = true;
-			set_state(UNLOCKED);
-			Signal_transmitter(state_handler).submit();
-		});
+// 	// bool ui_report_changed = false;
+// 	switch (rekey_state) {
+// 	case Rekey::WAIT_FOR_TRESOR:
 
-		break;
+// 		if (file_starts_with(node, "rekey", String<10>("succeeded")) ||
+// 		    file_starts_with(node, "rekey", String<5>("none"))) {
 
-	case UNLOCKED:
-	case LOCK_PENDING:
+// 			rekey_state = Rekey::SEND_REQUEST;
+// 			Signal_transmitter(state_handler).submit();
+// 		} else
+// 			error("failed to rekey: tresor not ready");
+// 		break;
 
-		if (extend_state != Extend::READ_FS_SIZE)
-			break;
+// 	case Rekey::REQUEST_IN_PROGRESS:
 
-		with_file(listing, "data", [&] (Xml_node const &file) {
-			size_t const size { file.attribute_value("size", (size_t)0) };
-			// if (ui_report.capacity != size) {
-			// 	ui_report.capacity = size;
-			// 	ui_report_changed = true;
-			// 	extend_state = Extend::RESIZE2FS;
-			// 	Signal_transmitter(state_handler).submit();
-			// } else {
-			// 	extend_state = Extend::INACTIVE;
-			// 	ui_report.extend->finished = true;
-			// 	ui_report_changed = true;
-			// 	Signal_transmitter(state_handler).submit();
-			// }
-			Signal_transmitter(state_handler).submit(); // Was only upper
-		});
-		break;
+// 		if (file_starts_with(node, "rekey", String<10>("succeeded"))) {
+// 			// ui_report.rekey->finished = true;
+// 			// ui_report_changed = true;
+// 			rekey_state = Rekey::INACTIVE;
+// 			Signal_transmitter(state_handler).submit();
+// 		} else
+// 			error("failed to rekey: operation failed at tresor");
+// 		break;
 
-	default: break;
-	}
-	// if (ui_report_changed)
-	// 	generate_ui_report();
-}
+// 	default: break;
+// 	}
+// 	// if (ui_report_changed)
+// 	// 	generate_ui_report();
+// }
 
 
-void Main::handle_image_fs_query_listing(Xml_node const &listing)
-{
-	// bool ui_report_changed { false };
-	switch (state) {
-	case INVALID:
-	{
-		bool image_exists = false;
-		with_file(listing, image_name, [&] (Xml_node const &) { image_exists = true; });
-		if (!image_exists)
-			with_file(listing, DEPRECATED_IMAGE_NAME, [&] (Xml_node const &) {
-				image_name = DEPRECATED_IMAGE_NAME;
-				image_exists = true; });
+// void Main::handle_client_fs_query_listing(Xml_node const &listing)
+// {
+// 	// bool ui_report_changed = false;
+// 	switch (state) {
+// 	case SETUP_READ_FS_SIZE:
+// 	case UNLOCK_READ_FS_SIZE:
 
-		set_state(image_exists ? LOCKED : UNINITIALIZED);
-		break;
-	}
+// 		with_file(listing, "data", [&] (Xml_node const &file) {
+// 			// ui_report.capacity = file.attribute_value("size", 0UL);
+// 			// ui_report_changed = true;
+// 			set_state(UNLOCKED);
+// 			Signal_transmitter(state_handler).submit();
+// 		});
 
-	case UNLOCKED:
-	case LOCK_PENDING:
-	{
-		size_t size { 0 };
-		with_file(listing, image_name, [&] (Xml_node const &file) { size = file.attribute_value("size", 0UL); });
-		// if (ui_report.image_size != size) {
-		// 	ui_report.image_size = size;
-		// 	ui_report_changed = true;
-		// }
-		break;
-	}
-	default: break;
-	}
-	// if (ui_report_changed)
-	// 	generate_ui_report();
-}
+// 		break;
+
+// 	case UNLOCKED:
+// 	case LOCK_PENDING:
+
+// 		if (extend_state != Extend::READ_FS_SIZE)
+// 			break;
+
+// 		with_file(listing, "data", [&] (Xml_node const &file) {
+// 			size_t const size { file.attribute_value("size", (size_t)0) };
+// 			// if (ui_report.capacity != size) {
+// 			// 	ui_report.capacity = size;
+// 			// 	ui_report_changed = true;
+// 			// 	extend_state = Extend::RESIZE2FS;
+// 			// 	Signal_transmitter(state_handler).submit();
+// 			// } else {
+// 			// 	extend_state = Extend::INACTIVE;
+// 			// 	ui_report.extend->finished = true;
+// 			// 	ui_report_changed = true;
+// 			// 	Signal_transmitter(state_handler).submit();
+// 			// }
+// 			Signal_transmitter(state_handler).submit(); // Was only upper
+// 		});
+// 		break;
+
+// 	default: break;
+// 	}
+// 	// if (ui_report_changed)
+// 	// 	generate_ui_report();
+// }
+
+
+// void Main::handle_image_fs_query_listing(Xml_node const &listing)
+// {
+// 	// bool ui_report_changed { false };
+// 	switch (state) {
+// 	case INVALID:
+// 	{
+// 		bool image_exists = false;
+// 		with_file(listing, image_name, [&] (Xml_node const &) { image_exists = true; });
+// 		if (!image_exists)
+// 			with_file(listing, DEPRECATED_IMAGE_NAME, [&] (Xml_node const &) {
+// 				image_name = DEPRECATED_IMAGE_NAME;
+// 				image_exists = true; });
+
+// 		set_state(image_exists ? LOCKED : UNINITIALIZED);
+// 		break;
+// 	}
+
+// 	case UNLOCKED:
+// 	case LOCK_PENDING:
+// 	{
+// 		size_t size { 0 };
+// 		with_file(listing, image_name, [&] (Xml_node const &file) { size = file.attribute_value("size", 0UL); });
+// 		// if (ui_report.image_size != size) {
+// 		// 	ui_report.image_size = size;
+// 		// 	ui_report_changed = true;
+// 		// }
+// 		break;
+// 	}
+// 	default: break;
+// 	}
+// 	// if (ui_report_changed)
+// 	// 	generate_ui_report();
+// }
 
 
 // void Main::handle_ui_config()
@@ -552,49 +587,49 @@ void Main::handle_image_fs_query_listing(Xml_node const &listing)
 // 		update_sandbox_config();
 // }
 
-void Main::handle_sandbox_state_extend_and_rekey(Xml_node const &sandbox_state, bool &update_sandbox_cfg) // , bool &ui_report_changed)
-{
-	switch (extend_state) {
-	case Extend::ADAPT_IMAGE_SIZE:
+// void Main::handle_sandbox_state_extend_and_rekey(Xml_node const &sandbox_state, bool &update_sandbox_cfg) // , bool &ui_report_changed)
+// {
+// 	switch (extend_state) {
+// 	case Extend::ADAPT_IMAGE_SIZE:
 
-		if (child_succeeded(truncate_file, sandbox_state)) {
-			extend_state = Extend::WAIT_FOR_TRESOR;
-			update_sandbox_cfg = true;
-		}
-		break;
+// 		if (child_succeeded(truncate_file, sandbox_state)) {
+// 			extend_state = Extend::WAIT_FOR_TRESOR;
+// 			update_sandbox_cfg = true;
+// 		}
+// 		break;
 
-	case Extend::SEND_REQUEST:
+// 	case Extend::SEND_REQUEST:
 
-		if (child_succeeded(extend_fs_tool, sandbox_state)) {
-			extend_state = Extend::REQUEST_IN_PROGRESS;
-			update_sandbox_cfg = true;
-		}
-		break;
+// 		if (child_succeeded(extend_fs_tool, sandbox_state)) {
+// 			extend_state = Extend::REQUEST_IN_PROGRESS;
+// 			update_sandbox_cfg = true;
+// 		}
+// 		break;
 
-	case Extend::RESIZE2FS:
+// 	case Extend::RESIZE2FS:
 
-		if (child_succeeded(resize2fs, sandbox_state)) {
-			extend_state = Extend::INACTIVE;
-			// ui_report.extend->finished = true;
-			// ui_report_changed = true;
-			update_sandbox_cfg = true;
-		}
-		break;
+// 		if (child_succeeded(resize2fs, sandbox_state)) {
+// 			extend_state = Extend::INACTIVE;
+// 			// ui_report.extend->finished = true;
+// 			// ui_report_changed = true;
+// 			update_sandbox_cfg = true;
+// 		}
+// 		break;
 
-	default: break;
-	}
-	switch (rekey_state) {
-	case Rekey::SEND_REQUEST:
+// 	default: break;
+// 	}
+// 	switch (rekey_state) {
+// 	case Rekey::SEND_REQUEST:
 
-		if (child_succeeded(rekey_fs_tool, sandbox_state)) {
-			rekey_state = Rekey::REQUEST_IN_PROGRESS;
-			update_sandbox_cfg = true;
-		}
-		break;
+// 		if (child_succeeded(rekey_fs_tool, sandbox_state)) {
+// 			rekey_state = Rekey::REQUEST_IN_PROGRESS;
+// 			update_sandbox_cfg = true;
+// 		}
+// 		break;
 
-	default: break;
-	}
-}
+// 	default: break;
+// 	}
+// }
 
 
 void Main::handle_sandbox_state()
@@ -627,18 +662,38 @@ void Main::handle_sandbox_state()
 		break;
 
 	case E2FSCK:
-		with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
+		if (fsck_avail) {
+			with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
 
-			if (code == 0 || code == 1 || code == 2) {
-				set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
-				log("E2FSCK: UNLOCK_READ_FS_SIZE");
-			} else {
-				set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
-				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
-			}
+				if (code == 0 || code == 1 || code == 2) {
+					set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+					log("E2FSCK: UNLOCK_READ_FS_SIZE");
+				} else {
+					set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
+					log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
+				}
 
+				update_sandbox_cfg = true;
+			});
+		} else {
+			set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+			log("E2FSCK: UNLOCK_READ_FS_SIZE");
 			update_sandbox_cfg = true;
-		});
+		}
+		
+		
+		// with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
+
+		// 	if (code == 0 || code == 1 || code == 2) {
+		// 		set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
+		// 		log("E2FSCK: UNLOCK_READ_FS_SIZE");
+		// 	} else {
+		// 		set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
+		// 		log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
+		// 	}
+
+		// 	update_sandbox_cfg = true;
+		// });
 
 		// set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
 		// log("E2FSCK: UNLOCK_READ_FS_SIZE");
@@ -745,7 +800,7 @@ void Main::handle_sandbox_state()
 		break;
 
 	case UNLOCKED:
-		handle_sandbox_state_extend_and_rekey(sandbox_state.xml, update_sandbox_cfg); // , ui_report_changed);
+		// handle_sandbox_state_extend_and_rekey(sandbox_state.xml, update_sandbox_cfg); // , ui_report_changed);
 
 		if(child_succeeded(init_flag, sandbox_state.xml)) {
 			error("Error during init flag writing");
@@ -760,14 +815,14 @@ void Main::handle_sandbox_state()
 						num_clients.value++; }); }); });
 		break;
 
-	case LOCK_PENDING:
-		handle_sandbox_state_extend_and_rekey(sandbox_state.xml, update_sandbox_cfg); // , ui_report_changed);
-		if (extend_state == Extend::INACTIVE && rekey_state == Rekey::INACTIVE) {
-			log("LOCK_PENDING");
-			set_state(START_LOCKING);
-			update_sandbox_cfg = true;
-		}
-		break;
+	// case LOCK_PENDING:
+	// 	handle_sandbox_state_extend_and_rekey(sandbox_state.xml, update_sandbox_cfg); // , ui_report_changed);
+	// 	if (extend_state == Extend::INACTIVE && rekey_state == Rekey::INACTIVE) {
+	// 		log("LOCK_PENDING");
+	// 		set_state(START_LOCKING);
+	// 		update_sandbox_cfg = true;
+	// 	}
+	// 	break;
 
 	case START_LOCKING:
 		if (child_succeeded(lock_fs_tool, sandbox_state.xml)) {
@@ -802,12 +857,12 @@ void Main::wakeup_local_service()
 			req.deliver_session(*new (heap)
 				Report_session_component(env, handler, env.ep(), req.resources, "", req.diag));
 		};
-		if (req.label == "image_fs_query -> listing") deliver_session(image_fs_query_listing_handler);
-		else if (req.label == "client_fs_query -> listing") deliver_session(client_fs_query_listing_handler);
-		else if (req.label == "extend_fs_query -> listing") deliver_session(extend_fs_query_listing_handler);
-		else if (req.label == "rekey_fs_query -> listing") deliver_session(rekey_fs_query_listing_handler);
-		else if (req.label == "lock_fs_query -> listing") deliver_session(lock_fs_query_listing_handler);
-		else error("failed to deliver Report session with label ", req.label);
+		// if (req.label == "image_fs_query -> listing") deliver_session(image_fs_query_listing_handler);
+		// else if (req.label == "client_fs_query -> listing") deliver_session(client_fs_query_listing_handler);
+		// else if (req.label == "extend_fs_query -> listing") deliver_session(extend_fs_query_listing_handler);
+		// else if (req.label == "rekey_fs_query -> listing") deliver_session(rekey_fs_query_listing_handler);
+		// else if (req.label == "lock_fs_query -> listing") deliver_session(lock_fs_query_listing_handler);
+		// else error("failed to deliver Report session with label ", req.label);
 	});
 	report_service.for_each_session_to_close([&] (Report_session_component &session) {
 		destroy(heap, &session);
@@ -816,59 +871,59 @@ void Main::wakeup_local_service()
 }
 
 
-void Main::gen_sandbox_cfg_extend_and_rekey(Xml_generator &xml) const
-{
-	switch (extend_state) {
-	case Extend::INACTIVE: break;
-	case Extend::ADAPT_IMAGE_SIZE:
+// void Main::gen_sandbox_cfg_extend_and_rekey(Xml_generator &xml) const
+// {
+// 	switch (extend_state) {
+// 	case Extend::INACTIVE: break;
+// 	case Extend::ADAPT_IMAGE_SIZE:
 
-		// switch (ui_config->extend->tree) {
-		// case Ui_config::Extend::VIRTUAL_BLOCK_DEVICE:
-		// {
-		// 	size_t bytes = ui_config->extend->num_bytes;
-		// 	size_t effective_bytes = bytes - (bytes % BLOCK_SIZE);
-		// 	gen_truncate_file_start_node(
-		// 		xml, truncate_file, File_path("/tresor/", image_name).string(), ui_report.image_size + effective_bytes);
-		// 	break;
-		// }
-		// case Ui_config::Extend::FREE_TREE:
-		// {
-		// 	size_t bytes = ui_config->extend->num_bytes;
-		// 	size_t effective_bytes = bytes - (bytes % BLOCK_SIZE);
-		// 	gen_truncate_file_start_node(
-		// 		xml, truncate_file, File_path("/tresor/", image_name).string(), ui_report.image_size + effective_bytes);
-		// 	break;
-		// } }
-		break;
+// 		// switch (ui_config->extend->tree) {
+// 		// case Ui_config::Extend::VIRTUAL_BLOCK_DEVICE:
+// 		// {
+// 		// 	size_t bytes = ui_config->extend->num_bytes;
+// 		// 	size_t effective_bytes = bytes - (bytes % BLOCK_SIZE);
+// 		// 	gen_truncate_file_start_node(
+// 		// 		xml, truncate_file, File_path("/tresor/", image_name).string(), ui_report.image_size + effective_bytes);
+// 		// 	break;
+// 		// }
+// 		// case Ui_config::Extend::FREE_TREE:
+// 		// {
+// 		// 	size_t bytes = ui_config->extend->num_bytes;
+// 		// 	size_t effective_bytes = bytes - (bytes % BLOCK_SIZE);
+// 		// 	gen_truncate_file_start_node(
+// 		// 		xml, truncate_file, File_path("/tresor/", image_name).string(), ui_report.image_size + effective_bytes);
+// 		// 	break;
+// 		// } }
+// 		break;
 
-	case Extend::WAIT_FOR_TRESOR: gen_extend_fs_query_start_node(xml, extend_fs_query); break;
-	case Extend::SEND_REQUEST:
+// 	case Extend::WAIT_FOR_TRESOR: gen_extend_fs_query_start_node(xml, extend_fs_query); break;
+// 	case Extend::SEND_REQUEST:
 
-		// switch (ui_config->extend->tree) {
-		// case Ui_config::Extend::VIRTUAL_BLOCK_DEVICE:
-		// 	gen_extend_fs_tool_start_node(xml, extend_fs_tool, "vbd", ui_config->extend->num_bytes / BLOCK_SIZE);
-		// 	break;
-		// case Ui_config::Extend::FREE_TREE:
-		// 	gen_extend_fs_tool_start_node(xml, extend_fs_tool, "ft", ui_config->extend->num_bytes / BLOCK_SIZE);
-		// 	break;
-		// }
-		break;
+// 		// switch (ui_config->extend->tree) {
+// 		// case Ui_config::Extend::VIRTUAL_BLOCK_DEVICE:
+// 		// 	gen_extend_fs_tool_start_node(xml, extend_fs_tool, "vbd", ui_config->extend->num_bytes / BLOCK_SIZE);
+// 		// 	break;
+// 		// case Ui_config::Extend::FREE_TREE:
+// 		// 	gen_extend_fs_tool_start_node(xml, extend_fs_tool, "ft", ui_config->extend->num_bytes / BLOCK_SIZE);
+// 		// 	break;
+// 		// }
+// 		break;
 
-	case Extend::REQUEST_IN_PROGRESS: gen_extend_fs_query_start_node(xml, extend_fs_query); break;
-	case Extend::READ_FS_SIZE:
+// 	case Extend::REQUEST_IN_PROGRESS: gen_extend_fs_query_start_node(xml, extend_fs_query); break;
+// 	case Extend::READ_FS_SIZE:
 
-		gen_client_fs_query_start_node(xml, client_fs_query);
-		break;
+// 		gen_client_fs_query_start_node(xml, client_fs_query);
+// 		break;
 
-	case Extend::RESIZE2FS: gen_resize2fs_start_node(xml, resize2fs); break;
-	}
-	switch(rekey_state) {
-	case Rekey::INACTIVE: break;
-	case Rekey::WAIT_FOR_TRESOR: gen_rekey_fs_query_start_node(xml, rekey_fs_query); break;
-	case Rekey::SEND_REQUEST: gen_rekey_fs_tool_start_node(xml, rekey_fs_tool); break;
-	case Rekey::REQUEST_IN_PROGRESS: gen_rekey_fs_query_start_node(xml, rekey_fs_query); break;
-	}
-}
+// 	case Extend::RESIZE2FS: gen_resize2fs_start_node(xml, resize2fs); break;
+// 	}
+// 	switch(rekey_state) {
+// 	case Rekey::INACTIVE: break;
+// 	case Rekey::WAIT_FOR_TRESOR: gen_rekey_fs_query_start_node(xml, rekey_fs_query); break;
+// 	case Rekey::SEND_REQUEST: gen_rekey_fs_tool_start_node(xml, rekey_fs_tool); break;
+// 	case Rekey::REQUEST_IN_PROGRESS: gen_rekey_fs_query_start_node(xml, rekey_fs_query); break;
+// 	}
+// }
 
 void Main::generate_sandbox_config(Xml_generator &xml) const
 {
@@ -876,7 +931,9 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 
 	switch (state) {
 	case INVALID:
-		gen_parent_provides_and_report_nodes(xml);
+		error("se_vault state: INVALID");
+		env.parent().exit(1);
+		// gen_parent_provides_and_report_nodes(xml);
 		// gen_image_fs_query_start_node(xml, image_fs_query);
 		break;
 
@@ -924,14 +981,14 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_e2fsck_start_node(xml, e2fsck);
 		break;
 
-	case SETUP_READ_FS_SIZE:
-	case UNLOCK_READ_FS_SIZE:
+	// case SETUP_READ_FS_SIZE:
+	// case UNLOCK_READ_FS_SIZE:
 
-		gen_parent_provides_and_report_nodes(xml);
-		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
-		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
-		gen_client_fs_query_start_node(xml, client_fs_query);
-		break;
+	// 	gen_parent_provides_and_report_nodes(xml);
+	// 	gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+	// 	gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+	// 	// gen_client_fs_query_start_node(xml, client_fs_query);
+	// 	break;
 	
 	case SETUP_INIT_FLAG:
 		gen_parent_provides_and_report_nodes(xml);
@@ -1009,24 +1066,24 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
 		// gen_image_fs_query_start_node(xml, image_fs_query);
-		gen_sandbox_cfg_extend_and_rekey(xml);
+		// gen_sandbox_cfg_extend_and_rekey(xml);
 		// gen_snapper_start_node(xml);
 		// gen_isomem_start_node(xml);
-		if (extend_state != Extend::INACTIVE) //  && ui_config->extend->tree == Ui_config::Extend::VIRTUAL_BLOCK_DEVICE)
-			break;
+		// if (extend_state != Extend::INACTIVE) //  && ui_config->extend->tree == Ui_config::Extend::VIRTUAL_BLOCK_DEVICE)
+		// 	break;
 
 		gen_child_service_policy(xml, "File_system", system_vfs);
 		gen_system_vfs_start_node(xml, system_vfs);
 		break;
 
-	case LOCK_PENDING:
+	// case LOCK_PENDING:
 
-		gen_parent_provides_and_report_nodes(xml);
-		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
-		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
-		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
-		gen_sandbox_cfg_extend_and_rekey(xml);
-		break;
+	// 	gen_parent_provides_and_report_nodes(xml);
+	// 	gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+	// 	gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+	// 	gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
+	// 	gen_sandbox_cfg_extend_and_rekey(xml);
+	// 	break;
 
 	case START_LOCKING:
 
@@ -1035,7 +1092,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
-		gen_lock_fs_tool_start_node(xml, lock_fs_tool);
+		// gen_lock_fs_tool_start_node(xml, lock_fs_tool);
 		break;
 
 	case LOCKING:
@@ -1045,7 +1102,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
-		gen_lock_fs_query_start_node(xml, lock_fs_query);
+		// gen_lock_fs_query_start_node(xml, lock_fs_query);
 		break;
 	}
 }

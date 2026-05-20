@@ -230,15 +230,15 @@ namespace File_vault {
 						});
 					});
 				});
-				gen_vfs_policy(xml, "extend_fs_tool -> ", "/dev", true);
-				gen_vfs_policy(xml, "rekey_fs_tool -> ", "/dev", true);
-				gen_vfs_policy(xml, "lock_fs_tool -> ", "/dev", true);
-				gen_vfs_policy(xml, "extend_fs_query -> ", "/dev", true);
-				gen_vfs_policy(xml, "rekey_fs_query -> ", "/dev", true);
-				gen_vfs_policy(xml, "lock_fs_query -> ", "/dev", true);
+				// gen_vfs_policy(xml, "extend_fs_tool -> ", "/dev", true);
+				// gen_vfs_policy(xml, "rekey_fs_tool -> ", "/dev", true);
+				// gen_vfs_policy(xml, "lock_fs_tool -> ", "/dev", true);
+				// gen_vfs_policy(xml, "extend_fs_query -> ", "/dev", true);
+				// gen_vfs_policy(xml, "rekey_fs_query -> ", "/dev", true);
+				// gen_vfs_policy(xml, "lock_fs_query -> ", "/dev", true);
 				gen_vfs_policy(xml, "vfs_block -> ", "/dev/tresor/current", true);
 				// gen_vfs_policy(xml, "snapper -> ", "/dev/tresor/current", true);
-				gen_vfs_policy(xml, "client_fs_query -> ", "/dev/tresor/current", false);
+				// gen_vfs_policy(xml, "client_fs_query -> ", "/dev/tresor/current", false);
 				gen_vfs_policy(xml, "sync_to_tresor_vfs_init -> ", "/dev", true);
 			});
 			xml.node("route", [&] {
@@ -501,95 +501,94 @@ namespace File_vault {
 				gen_named_node(xml, "child", child.start_name(), [&] { }); }); });
 	}
 
-	void gen_fs_tool_start_node(Xml_generator &xml, Child_state const &child, char const *server,
-	                            char const *path, auto content)
-	{
-		child.gen_start_node(xml, [&] {
-			xml.node("config", [&] {
-				xml.attribute("exit", "yes");
-				xml.node("vfs", [&] {
-					gen_named_node(xml, "dir", "root", [&] {
-						xml.node("fs", [&] { xml.attribute("writeable", "yes"); }); }); });
-				xml.node("new-file", [&] {
-					xml.attribute("path", String<64>("/root", path));
-					xml.append_content(content);
-				});
-			});
-			xml.node("route", [&] {
-				gen_child_route(xml, server, "File_system");
-				gen_common_routes(xml);
-			});
-		});
-	}
+	// void gen_fs_tool_start_node(Xml_generator &xml, Child_state const &child, char const *server,
+	//                             char const *path, auto content)
+	// {
+	// 	child.gen_start_node(xml, [&] {
+	// 		xml.node("config", [&] {
+	// 			xml.attribute("exit", "yes");
+	// 			xml.node("vfs", [&] {
+	// 				gen_named_node(xml, "dir", "root", [&] {
+	// 					xml.node("fs", [&] { xml.attribute("writeable", "yes"); }); }); });
+	// 			xml.node("new-file", [&] {
+	// 				xml.attribute("path", String<64>("/root", path));
+	// 				xml.append_content(content);
+	// 			});
+	// 		});
+	// 		xml.node("route", [&] {
+	// 			gen_child_route(xml, server, "File_system");
+	// 			gen_common_routes(xml);
+	// 		});
+	// 	});
+	// }
 
-	void gen_fs_query_start_node(Xml_generator &xml, Child_state const &child, char const *server,
-	                             char const *path, bool content)
-	{
-		child.gen_start_node(xml, [&] {
-			xml.node("config", [&] {
-				xml.node("vfs", [&] {
-					xml.node("fs", [&] { xml.attribute("writeable", "no"); }); });
-				xml.node("query", [&] {
-					xml.attribute("path", path);
-					xml.attribute("size", "yes");
-					xml.attribute("content", content ? "yes" : "no");
-				});
-				path = 0;
-				content = 0;
-			});
-			xml.node("route", [&] {
-				gen_local_route(xml, "Report");
-				if (!strcmp(server, "parent")) {
-					gen_parent_route(xml, "File_system");
-				}
-				else {
-					gen_child_route(xml, server, "File_system");
-				}
-				gen_common_routes(xml);
-			});
-		});
-	}
+	// void gen_fs_query_start_node(Xml_generator &xml, Child_state const &child, char const *server,
+	//                              char const *path, bool content)
+	// {
+	// 	child.gen_start_node(xml, [&] {
+	// 		xml.node("config", [&] {
+	// 			xml.node("vfs", [&] {
+	// 				xml.node("fs", [&] { xml.attribute("writeable", "no"); }); });
+	// 			xml.node("query", [&] {
+	// 				xml.attribute("path", path);
+	// 				xml.attribute("size", "yes");
+	// 				xml.attribute("content", content ? "yes" : "no");
+	// 			});
+	// 			path = 0;
+	// 			content = 0;
+	// 		});
+	// 		xml.node("route", [&] {
+	// 			gen_local_route(xml, "Report");
+	// 			if (!strcmp(server, "parent")) {
+	// 				gen_parent_route(xml, "File_system");
+	// 			}
+	// 			else {
+	// 				gen_child_route(xml, server, "File_system");
+	// 			}
+	// 			gen_common_routes(xml);
+	// 		});
+	// 	});
+	// }
 
-	void gen_extend_fs_tool_start_node(Xml_generator &xml, Child_state const &child, char const *tree, Number_of_blocks num_blocks) {
-		log("gen_extend_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/extend", String<64>("tree=", tree, ",blocks=", num_blocks));
-	}
+	// void gen_extend_fs_tool_start_node(Xml_generator &xml, Child_state const &child, char const *tree, Number_of_blocks num_blocks) {
+	// 	log("gen_extend_fs_tool_start_node");
+	// 	gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/extend", String<64>("tree=", tree, ",blocks=", num_blocks));
+	// }
 
-	void gen_lock_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_lock_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/deinitialize", "true");
-	}
+	// void gen_lock_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_lock_fs_tool_start_node");
+	// 	gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/deinitialize", "true");
+	// }
 
-	void gen_rekey_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_rekey_fs_tool_start_node");
-		gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/rekey", "true");
-	}
+	// void gen_rekey_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_rekey_fs_tool_start_node");
+	// 	gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/rekey", "true");
+	// }
 
-	void gen_image_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_image_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "parent", "/", false);
-	}
+	// void gen_image_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	gen_fs_query_start_node(xml, child, "parent", "/", false);
+	// }
 
-	void gen_client_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_client_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/", false);
-		log("gen_client_fs_query_start_node");
-	}
+	// void gen_client_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_client_fs_query_start_node");
+	// 	gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/", false);
+	// 	log("gen_client_fs_query_start_node");
+	// }
 
-	void gen_extend_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_extend_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
-	}
+	// void gen_extend_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_extend_fs_query_start_node");
+	// 	gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
+	// }
 
-	void gen_lock_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_lock_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
-	}
+	// void gen_lock_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_lock_fs_query_start_node");
+	// 	gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
+	// }
 
-	void gen_rekey_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
-		log("gen_rekey_fs_query_start_node");
-		gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
-	}
+	// void gen_rekey_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	log("gen_rekey_fs_query_start_node");
+	// 	gen_fs_query_start_node(xml, child, "se_tresor_vfs", "/tresor/control", true);
+	// }
 
 
 	void gen_e2fsck_start_node(Xml_generator &xml, Child_state const &child) {
