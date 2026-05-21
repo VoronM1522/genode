@@ -21,7 +21,7 @@
 #include <os/buffered_xml.h>
 #include <os/vfs.h>
 #include <os/reporter.h>
-#include <timer_session/connection.h>
+// #include <timer_session/connection.h>
 #include <report_session/report_session.h>
 
 /* local includes */
@@ -80,85 +80,86 @@ static bool child_succeeded(Child_state const &child, Xml_node const &sandbox)
 
 
 // check
-static void with_file(Xml_node const &fs_query_listing, File_path const &name, auto const &fn)
-{
-	bool done = false;
-	fs_query_listing.with_optional_sub_node("dir", [&] (Xml_node const &dir) {
-		dir.for_each_sub_node("file", [&] (Xml_node const &file) {
-			if (!done && has_name(file, name)) {
-				fn(file);
-				done = true; } }); });
-}
+// static void with_file(Xml_node const &fs_query_listing, File_path const &name, auto const &fn)
+// {
+// 	bool done = false;
+// 	fs_query_listing.with_optional_sub_node("dir", [&] (Xml_node const &dir) {
+// 		dir.for_each_sub_node("file", [&] (Xml_node const &file) {
+// 			if (!done && has_name(file, name)) {
+// 				fn(file);
+// 				done = true; } }); });
+// }
 
 
 // check
-static bool file_starts_with(Xml_node const &fs_query_listing, File_path const &file_name, auto const &str)
-{
-	bool result = false;
-	with_file(fs_query_listing, file_name, [&] (Xml_node const &file) {
-		file.with_raw_content([&] (char const *base, size_t size) {
-			result = decltype(str)(Cstring(base, size)) == str; }); });
-	return result;
-}
+// static bool file_starts_with(Xml_node const &fs_query_listing, File_path const &file_name, auto const &str)
+// {
+// 	bool result = false;
+// 	with_file(fs_query_listing, file_name, [&] (Xml_node const &file) {
+// 		file.with_raw_content([&] (char const *base, size_t size) {
+// 			result = decltype(str)(Cstring(base, size)) == str; }); });
+// 	return result;
+// }
 
 
 // check
-struct Report_session_component : Session_object<Report::Session>
-{
-	struct Handler_base : Interface, Genode::Noncopyable
-	{
-		virtual void handle_report(char const *, size_t) = 0;
-	};
+// struct Report_session_component : Session_object<Report::Session>
+// {
+// 	struct Handler_base : Interface, Genode::Noncopyable
+// 	{
+// 		virtual void handle_report(char const *, size_t) = 0;
+// 	};
 
-	template <typename T>
-	struct Xml_handler : Handler_base
-	{
-		T &obj;
-		void (T::*member) (Xml_node const &);
+// 	template <typename T>
+// 	struct Xml_handler : Handler_base
+// 	{
+// 		T &obj;
+// 		void (T::*member) (Xml_node const &);
 
-		Xml_handler(T &obj, void (T::*member)(Xml_node const &)) : obj(obj), member(member) { }
+// 		Xml_handler(T &obj, void (T::*member)(Xml_node const &)) : obj(obj), member(member) { }
 
-		void handle_report(char const *start, size_t length) override
-		{
-			(obj.*member)(Xml_node(start, length));
-		}
-	};
+// 		void handle_report(char const *start, size_t length) override
+// 		{
+// 			(obj.*member)(Xml_node(start, length));
+// 		}
+// 	};
 
-	Attached_ram_dataspace ds;
-	Handler_base &handler;
+// 	Attached_ram_dataspace ds;
+// 	Handler_base &handler;
 
-	Dataspace_capability dataspace() override { return ds.cap(); }
+// 	Dataspace_capability dataspace() override { return ds.cap(); }
 
-	void submit(size_t length) override
-	{
-		handler.handle_report(ds.local_addr<char const>(), min(ds.size(), length));
-	}
+// 	void submit(size_t length) override
+// 	{
+// 		handler.handle_report(ds.local_addr<char const>(), min(ds.size(), length));
+// 	}
 
-	void response_sigh(Signal_context_capability) override { }
+// 	void response_sigh(Signal_context_capability) override { }
 
-	size_t obtain_response() override { return 0; }
+// 	size_t obtain_response() override { return 0; }
 
-	template <typename... ARGS>
-	Report_session_component(Env &env, Handler_base &handler, Entrypoint &ep, Resources const &res, ARGS &&... args)
-	:
-		Session_object(ep, res, args...),
-		ds(env.ram(), env.rm(), res.ram_quota.value), handler(handler)
-	{ }
-};
+// 	template <typename... ARGS>
+// 	Report_session_component(Env &env, Handler_base &handler, Entrypoint &ep, Resources const &res, ARGS &&... args)
+// 	:
+// 		Session_object(ep, res, args...),
+// 		ds(env.ram(), env.rm(), res.ram_quota.value), handler(handler)
+// 	{ }
+// };
 
 
 struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 {
 	// check
-	using Report_service = Sandbox::Local_service<Report_session_component>;
-	using Report_xml_handler = Report_session_component::Xml_handler<Main>;
+	// using Report_service = Sandbox::Local_service<Report_session_component>;
+	// using Report_xml_handler = Report_session_component::Xml_handler<Main>;
 
 	static constexpr char const *DEPRECATED_IMAGE_NAME = "cbe.img";
+	bool _had_clients {  false };
 
 	enum State {
 		INVALID, SETUP_FILE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
 		SETUP_START_TRESOR, E2FSCK, SETUP_MKE2FS, SETUP_INIT_FLAG, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
-		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING, LOCKING // , UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
+		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING // , LOCKING, UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
 	};
 
 	// struct Extend { 
@@ -190,15 +191,14 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Env &env;
 	State state { INVALID };
 	Heap heap { env.ram(), env.rm() };
-	Timer::Connection timer { env };
+	// Timer::Connection timer { env };
 	Attached_rom_dataspace config_rom { env, "config" };
 	bool jent_avail { config_rom.xml().attribute_value("jitterentropy_available", true) };
 	bool fsck_apply { config_rom.xml().attribute_value("fsck_apply", true) };
-	bool check_lock { config_rom.xml().attribute_value("check_lock", true) };
 	Root_directory vfs { env, heap, config_rom.xml().sub_node("vfs") };
 	Registry<Child_state> children { };
 	Child_state mke2fs { children, "mke2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
-	Child_state resize2fs { children, "resize2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
+	// Child_state resize2fs { children, "resize2fs", Ram_quota { 32 * 1024 * 1024 }, Cap_quota { 300 } };
 	Child_state tresor_vfs { children, "se_tresor_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state tresor_trust_anchor_vfs { children, "se_tresor_trust_anchor_vfs", "vfs", Ram_quota { 256 * 1024 * 1024 }, Cap_quota { 200 } };
 	Child_state system_vfs { children, "system_vfs", "vfs", Ram_quota { 512 * 1024 * 1024 }, Cap_quota { 200 } };
@@ -216,7 +216,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	// Child_state rekey_fs_tool { children, "rekey_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
 	// Child_state rekey_fs_query { children, "rekey_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state lock_fs_tool { children, "lock_fs_tool", "fs_tool", Ram_quota { 6 * 1024 * 1024 }, Cap_quota { 200 } };
-	Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
 	// Child_state image_fs_query { children, "image_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
 	// Child_state client_fs_query { children, "client_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
 	
@@ -225,19 +225,18 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	// Report_xml_handler client_fs_query_listing_handler { *this, &Main::handle_client_fs_query_listing };
 	// Report_xml_handler extend_fs_query_listing_handler { *this, &Main::handle_extend_fs_query_listing };
 	// Report_xml_handler rekey_fs_query_listing_handler { *this, &Main::handle_rekey_fs_query_listing };
-	Report_xml_handler lock_fs_query_listing_handler { *this, &Main::handle_lock_fs_query_listing };
+	// Report_xml_handler lock_fs_query_listing_handler { *this, &Main::handle_lock_fs_query_listing };
 
 	Sandbox sandbox { env, *this };
-	Report_service report_service { sandbox, *this };
+	// Report_service report_service { sandbox, *this };
 	Signal_handler<Main> state_handler { env.ep(), *this, &Main::update_sandbox_config }; // handle_state };
 	// Extend::State extend_state { Extend::INACTIVE };
 	// Rekey::State rekey_state { Rekey::INACTIVE };
-	Timer::One_shot_timeout<Main> unlock_retry_delay { timer, *this, &Main::handle_unlock_retry_delay };
+	// Timer::One_shot_timeout<Main> unlock_retry_delay { timer, *this, &Main::handle_unlock_retry_delay };
 	// File_path image_name { "tresor.img" };
 
 	File_path image_name = config_rom.xml().attribute_value("image_name", File_path());
 	Passphrase passphrase { config_rom.xml().attribute_value("passphrase", Passphrase()) };
-
 	// Xml_node const &config { _config_rom.xml() };
 
 	// 		Tresor::Passphrase const passphrase =
@@ -250,12 +249,12 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	// static Ui_report::State state_to_ui_report_state(State);
 
-	void handle_unlock_retry_delay(Duration)
-	{
-		set_state(LOCKED);
-		// ui_config->passphrase = Passphrase();
-		Signal_transmitter(state_handler).submit();
-	}
+	// void handle_unlock_retry_delay(Duration)
+	// {
+	// 	set_state(LOCKED);
+	// 	// ui_config->passphrase = Passphrase();
+	// 	Signal_transmitter(state_handler).submit();
+	// }
 
 	// void handle_sandbox_state_extend_and_rekey(Xml_node const &, bool &); // , bool &);
 
@@ -271,16 +270,16 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 
 	// void handle_rekey_fs_query_listing(Xml_node const &);
 
-	void handle_lock_fs_query_listing(Xml_node const &node)
-	{
-		if (state != LOCKING)
-			return;
-		if (file_starts_with(node, "deinitialize", String<10>("succeeded"))) {
-			set_state(LOCKED);
-			Signal_transmitter(state_handler).submit();
-		} else
-			error("failed to deinitialize: operation failed at tresor");
-	}
+	// void handle_lock_fs_query_listing(Xml_node const &node)
+	// {
+	// 	if (state != LOCKING)
+	// 		return;
+	// 	if (file_starts_with(node, "deinitialize", String<10>("succeeded"))) {
+	// 		set_state(LOCKED);
+	// 		Signal_transmitter(state_handler).submit();
+	// 	} else
+	// 		error("failed to deinitialize: operation failed at tresor");
+	// }
 
 	// void handle_ui_config_rom() {
 	// 	ui_config_rom.update();
@@ -661,10 +660,10 @@ void Main::handle_sandbox_state()
 
 			if (code == 0 || code == 1 || code == 2) {
 				set_state(UNLOCKED); // SETUP_READ_FS_SIZE);
-				log("E2FSCK: UNLOCK_READ_FS_SIZE");
+				log("E2FSCK: UNLOCKED");
 			} else {
-				set_state(SETUP_INIT_TRUST_ANCHOR); // UNINITIALIZED);
-				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
+				set_state(INVALID); // UNINITIALIZED);
+				log("E2FSCK: INVALID");
 			}
 
 			update_sandbox_cfg = true;
@@ -759,38 +758,44 @@ void Main::handle_sandbox_state()
 	case UNLOCK_START_TRESOR:
 		log("UNLOCK_START_TRESOR");
 
-		with_exit_code(tresor_vfs, sandbox_state.xml, [&] (int code) {
-			if (!code) {
-				log("1", code);
-				set_state(SETUP_TRESOR_INIT);
-				update_sandbox_cfg = true;
-			} else {
-				log("2");
-			}
-		});
+		
+		// with_exit_code(tresor_vfs, sandbox_state.xml, [&] (int code) {
+		// 	if (!code) {
+		// 		log("1", code);
+		// 		set_state(SETUP_TRESOR_INIT);
+		// 		update_sandbox_cfg = true;
+		// 	} else {
+		// 		log("2");
+		// 	}
+		// });
 
-		if (update_sandbox_cfg) {
-			break;
+		// if (update_sandbox_cfg) {
+		// 	break;
+		// }
+		
+		
+
+		// with_exit_code(tresor_vfs, sandbox_state.xml, [&] (int code) {
+		// 	error("tresor_vfs exited unexpectedly with code ", code);
+		// 	set_state(INVALID);
+		// 	update_sandbox_cfg = true;
+		// 	break;
+		// });
+
+  		// log("child_succeeded");
+
+		
+		if (child_succeeded(sync_to_tresor_vfs_init, sandbox_state.xml)) {
+			log("UNLOCK_START_TRESOR: success");
+			if (fsck_apply) {
+				set_state(E2FSCK);
+			} else {
+				set_state(UNLOCKED);
+			}
+			
+			update_sandbox_cfg = true;
 		}
 		
-		
-
-		log("child_succeeded");
-
-		with_exit_code(sync_to_tresor_vfs_init, sandbox_state.xml, [&] (int code) {
-			if (code == 0) {
-				log("UNLOCK_START_TRESOR: success");
-				if (fsck_apply) {
-					set_state(E2FSCK);
-				} else {
-					set_state(UNLOCKED);
-				}
-			} else {
-				log("UNLOCK_START_TRESOR: sync failed, going UNINITIALIZED");
-				set_state(SETUP_TRESOR_INIT);
-			}
-			update_sandbox_cfg = true;
-		});
 		break;
 	case SETUP_MKE2FS:
 		if (child_succeeded(mke2fs, sandbox_state.xml)) {
@@ -809,6 +814,16 @@ void Main::handle_sandbox_state()
 				provided.for_each_sub_node("session", [&] (Xml_node const &session) {
 					if (session.attribute_value("service", Service_name()) == "File_system")
 						num_clients.value++; }); }); });
+
+		if (num_clients.value > 0) {
+			_had_clients = true;
+		}
+          
+		if (_had_clients && !num_clients.value) {
+			set_state(START_LOCKING);
+        	update_sandbox_cfg = true;
+		}
+
 		break;
 
 	// case LOCK_PENDING:
@@ -822,8 +837,10 @@ void Main::handle_sandbox_state()
 
 	case START_LOCKING:
 		if (child_succeeded(lock_fs_tool, sandbox_state.xml)) {
-			log("START_LOCKING");
-			set_state(LOCKING);
+			// log("START_LOCKING");
+			// set_state(LOCKING);
+			log("LOCKED");
+			set_state(LOCKED);
 			update_sandbox_cfg = true;
 		}
 		break;
@@ -848,23 +865,23 @@ void Main::handle_sandbox_state()
 
 void Main::wakeup_local_service()
 {
-	report_service.for_each_requested_session([&] (Report_service::Request &req) {
-		auto deliver_session = [&] (Report_xml_handler &handler) {
-			req.deliver_session(*new (heap)
-				Report_session_component(env, handler, env.ep(), req.resources, "", req.diag));
-		};
-		// if (req.label == "image_fs_query -> listing") deliver_session(image_fs_query_listing_handler);
-		// else if (req.label == "client_fs_query -> listing") deliver_session(client_fs_query_listing_handler);
-		// else if (req.label == "extend_fs_query -> listing") deliver_session(extend_fs_query_listing_handler);
-		// else if (req.label == "rekey_fs_query -> listing") deliver_session(rekey_fs_query_listing_handler);
-		// else 
-		if (req.label == "lock_fs_query -> listing") deliver_session(lock_fs_query_listing_handler);
-		else error("failed to deliver Report session with label ", req.label);
-	});
-	report_service.for_each_session_to_close([&] (Report_session_component &session) {
-		destroy(heap, &session);
-		return Report_service::Close_response::CLOSED;
-	});
+	// report_service.for_each_requested_session([&] (Report_service::Request &req) {
+	// 	auto deliver_session = [&] (Report_xml_handler &handler) {
+	// 		req.deliver_session(*new (heap)
+	// 			Report_session_component(env, handler, env.ep(), req.resources, "", req.diag));
+	// 	};
+	// 	// if (req.label == "image_fs_query -> listing") deliver_session(image_fs_query_listing_handler);
+	// 	// else if (req.label == "client_fs_query -> listing") deliver_session(client_fs_query_listing_handler);
+	// 	// else if (req.label == "extend_fs_query -> listing") deliver_session(extend_fs_query_listing_handler);
+	// 	// else if (req.label == "rekey_fs_query -> listing") deliver_session(rekey_fs_query_listing_handler);
+	// 	// else 
+	// 	// if (req.label == "lock_fs_query -> listing") deliver_session(lock_fs_query_listing_handler);
+	// 	// else error("failed to deliver Report session with label ", req.label);
+	// });
+	// report_service.for_each_session_to_close([&] (Report_session_component &session) {
+	// 	destroy(heap, &session);
+	// 	return Report_service::Close_response::CLOSED;
+	// });
 }
 
 
@@ -947,7 +964,10 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		break;
 
 	// case UNINITIALIZED: gen_parent_provides_and_report_nodes(xml); break;
-	case LOCKED: gen_parent_provides_and_report_nodes(xml); break;
+	case LOCKED:
+		log("LOCKED");
+		env.parent().exit(0);
+		break;
 	case SETUP_INIT_TRUST_ANCHOR:
 
 		gen_parent_provides_and_report_nodes(xml);
@@ -1054,22 +1074,22 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	case START_LOCKING:
 
 		gen_parent_provides_and_report_nodes(xml);
-		gen_child_service_policy(xml, "File_system", system_vfs);
+		// gen_child_service_policy(xml, "File_system", system_vfs);
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
 		gen_lock_fs_tool_start_node(xml, lock_fs_tool);
 		break;
 
-	case LOCKING:
+	// case LOCKING:
 
-		gen_parent_provides_and_report_nodes(xml);
-		gen_child_service_policy(xml, "File_system", system_vfs);
-		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
-		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
-		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
-		gen_lock_fs_query_start_node(xml, lock_fs_query);
-		break;
+	// 	gen_parent_provides_and_report_nodes(xml);
+	// 	// gen_child_service_policy(xml, "File_system", system_vfs);
+	// 	// gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+	// 	// gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+	// 	// gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
+	// 	// gen_lock_fs_query_start_node(xml, lock_fs_query);
+	// 	break;
 
 	// case SETUP_CREATE_IMAGE:
 		// log("TRESOR_VBD_MAX_LVL=", TRESOR_VBD_MAX_LVL);
