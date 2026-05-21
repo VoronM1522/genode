@@ -71,6 +71,7 @@ struct Main
 		}
 
 		auto truncate_res = handle_ptr->fs().ftruncate(handle_ptr, size);
+		log("AAA");
 
 		// Проверить case'ы
 		switch (truncate_res) {

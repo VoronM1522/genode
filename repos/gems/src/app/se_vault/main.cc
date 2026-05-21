@@ -159,7 +159,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	enum State {
 		INVALID, SETUP_FILE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
 		SETUP_START_TRESOR, E2FSCK, SETUP_MKE2FS, SETUP_INIT_FLAG, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
-		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING // , LOCKING, UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
+		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING, STOP_SYSTEM_VFS // , LOCKING, UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
 	};
 
 	// struct Extend { 
@@ -820,7 +820,7 @@ void Main::handle_sandbox_state()
 		}
           
 		if (_had_clients && !num_clients.value) {
-			set_state(START_LOCKING);
+			set_state(STOP_SYSTEM_VFS);
         	update_sandbox_cfg = true;
 		}
 
@@ -835,6 +835,21 @@ void Main::handle_sandbox_state()
 	// 	}
 	// 	break;
 
+	case STOP_SYSTEM_VFS: {
+		bool system_vfs_running = false;
+
+			with_child(sandbox_state.xml, system_vfs, [&] (Xml_node const &) {
+				system_vfs_running = true;
+			});
+
+			if (!system_vfs_running) {
+				set_state(START_LOCKING);
+				update_sandbox_cfg = true;
+			}
+			
+			break;
+	}
+    	
 	case START_LOCKING:
 		if (child_succeeded(lock_fs_tool, sandbox_state.xml)) {
 			// log("START_LOCKING");
@@ -1070,6 +1085,14 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	// 	gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
 	// 	gen_sandbox_cfg_extend_and_rekey(xml);
 	// 	break;
+
+	case STOP_SYSTEM_VFS:
+		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
+		break;
+
 
 	case START_LOCKING:
 
