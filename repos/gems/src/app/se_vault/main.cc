@@ -808,6 +808,14 @@ void Main::handle_sandbox_state()
 	case UNLOCKED:
 		// handle_sandbox_state_extend_and_rekey(sandbox_state.xml, update_sandbox_cfg); // , ui_report_changed);
 
+		
+		// if (child_succeeded(system_vfs, sandbox_state.xml)) {
+		// 	log("START_LOCKING");
+		// 	set_state(START_LOCKING); // SETUP_READ_FS_SIZE);
+		// 	update_sandbox_cfg = true;
+		// }
+		// break;
+
 		with_child(sandbox_state.xml, system_vfs, [&] (Xml_node const &child) {
 			log("UNLOCKED");
 			child.with_optional_sub_node("provided", [&] (Xml_node const &provided) {
@@ -819,10 +827,16 @@ void Main::handle_sandbox_state()
 			_had_clients = true;
 		}
           
-		if (_had_clients && !num_clients.value) {
+		if (child_succeeded(system_vfs, sandbox_state.xml)) {
+			log("START_LOCKING");
+			set_state(START_LOCKING);
+			update_sandbox_cfg = true;
+		} else if (_had_clients && !num_clients.value) {
+			log("STOP_SYSTEM_VFS");
 			set_state(STOP_SYSTEM_VFS);
-        	update_sandbox_cfg = true;
+			update_sandbox_cfg = true;
 		}
+
 
 		break;
 
@@ -835,20 +849,14 @@ void Main::handle_sandbox_state()
 	// 	}
 	// 	break;
 
-	case STOP_SYSTEM_VFS: {
-		bool system_vfs_running = false;
+	case STOP_SYSTEM_VFS:
+		if (child_succeeded(system_vfs, sandbox_state.xml)) {
+			log("START_LOCKING");
+			set_state(START_LOCKING);
+			update_sandbox_cfg = true;
+		}
 
-			with_child(sandbox_state.xml, system_vfs, [&] (Xml_node const &) {
-				system_vfs_running = true;
-			});
-
-			if (!system_vfs_running) {
-				set_state(START_LOCKING);
-				update_sandbox_cfg = true;
-			}
-			
-			break;
-	}
+		break;
     	
 	case START_LOCKING:
 		if (child_succeeded(lock_fs_tool, sandbox_state.xml)) {
@@ -1091,6 +1099,7 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
 		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
+		gen_system_vfs_start_node(xml, system_vfs, true); // Added
 		break;
 
 

@@ -293,11 +293,17 @@ namespace File_vault {
 //               reporting="no"
 //               external_cache_size="32M" report_cache="yes"/>
 
-	void gen_system_vfs_start_node(Xml_generator &xml, Child_state const &child)
+	void gen_system_vfs_start_node(Xml_generator &xml, Child_state const &child,
+	                               bool exit = false) // Added
 	{
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
+
+				if (exit) {
+					xml.attribute("exit", "yes"); // Added
+				}
+				
 				xml.node("vfs", [&] {
 					xml.node("dir", [&] {
 						xml.attribute("name", "dev");
