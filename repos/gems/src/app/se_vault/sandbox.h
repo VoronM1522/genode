@@ -146,19 +146,19 @@ namespace File_vault {
 						xml.node("log", [&] {});
 					});
 				});
-				// gen_arg(xml, "mkfs.ext4");
-				// gen_arg(xml, "-F");
-				// gen_arg(xml, "-b");
-				// gen_arg(xml, "4096");
-				// gen_arg(xml, "-O");
-				// gen_arg(xml, "^metadata_csum");
-				// gen_arg(xml, "/dev/block");
-
-				gen_arg(xml, "mkfs.ext3");
+				gen_arg(xml, "mkfs.ext4");
 				gen_arg(xml, "-F");
 				gen_arg(xml, "-b");
 				gen_arg(xml, "4096");
+				gen_arg(xml, "-O");
+				gen_arg(xml, "^metadata_csum");
 				gen_arg(xml, "/dev/block");
+
+				// gen_arg(xml, "mkfs.ext3");
+				// gen_arg(xml, "-F");
+				// gen_arg(xml, "-b");
+				// gen_arg(xml, "4096");
+				// gen_arg(xml, "/dev/block");
 			});
 			xml.node("route", [&] {
 				gen_child_route(xml, "vfs_block", "Block");
@@ -294,16 +294,23 @@ namespace File_vault {
 //               external_cache_size="32M" report_cache="yes"/>
 
 	void gen_system_vfs_start_node(Xml_generator &xml, Child_state const &child,
-	                               bool exit = false) // Added
+	                               bool exit = false) // , bool force_unmount = false) // Added
 	{
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 
 				if (exit) {
+					log("exit");
 					xml.attribute("exit", "yes"); // Added
+				} else {
+					log("no exit");
 				}
-				
+
+				// if (force_unmount) {
+				// 	xml.attribute("force_unmount", "yes"); // Added
+				// }
+
 				xml.node("vfs", [&] {
 					xml.node("dir", [&] {
 						xml.attribute("name", "dev");
@@ -546,7 +553,7 @@ namespace File_vault {
 	// 			content = 0;
 	// 		});
 	// 		xml.node("route", [&] {
-	// 			gen_local_route(xml, "Report");
+	// 			gen_parent_route(xml, "Report");
 	// 			if (!strcmp(server, "parent")) {
 	// 				gen_parent_route(xml, "File_system");
 	// 			}
@@ -571,6 +578,10 @@ namespace File_vault {
 	// void gen_rekey_fs_tool_start_node(Xml_generator &xml, Child_state const &child) {
 	// 	log("gen_rekey_fs_tool_start_node");
 	// 	gen_fs_tool_start_node(xml, child, "se_tresor_vfs", "/tresor/control/rekey", "true");
+	// }
+
+	// void gen_system_fs_query_start_node(Xml_generator &xml, Child_state const &child) {
+	// 	gen_fs_query_start_node(xml, child, "system_vfs", "/", false);
 	// }
 
 	// void gen_image_fs_query_start_node(Xml_generator &xml, Child_state const &child) {

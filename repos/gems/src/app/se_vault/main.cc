@@ -21,7 +21,7 @@
 #include <os/buffered_xml.h>
 #include <os/vfs.h>
 #include <os/reporter.h>
-// #include <timer_session/connection.h>
+#include <timer_session/connection.h>
 #include <report_session/report_session.h>
 
 /* local includes */
@@ -159,7 +159,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	enum State {
 		INVALID, SETUP_FILE, SETUP_INIT_TRUST_ANCHOR, SETUP_TRESOR_INIT,
 		SETUP_START_TRESOR, E2FSCK, SETUP_MKE2FS, SETUP_INIT_FLAG, LOCKED, UNLOCK_INIT_TRUST_ANCHOR,
-		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING, STOP_SYSTEM_VFS // , LOCKING, UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
+		UNLOCK_START_TRESOR, UNLOCKED, START_LOCKING, STOP_SYSTEM_VFS, UNMOUNT1, UNMOUNT2 // , LOCKING, UNINITIALIZED, UNLOCK_READ_FS_SIZE, SETUP_READ_FS_SIZE, SETUP_CREATE_IMAGE, LOCK_PENDING
 	};
 
 	// struct Extend { 
@@ -191,7 +191,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	Env &env;
 	State state { INVALID };
 	Heap heap { env.ram(), env.rm() };
-	// Timer::Connection timer { env };
+	Timer::Connection timer { env };
 	Attached_rom_dataspace config_rom { env, "config" };
 	bool jent_avail { config_rom.xml().attribute_value("jitterentropy_available", true) };
 	bool fsck_apply { config_rom.xml().attribute_value("fsck_apply", true) };
@@ -215,6 +215,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	// Child_state extend_fs_query { children, "extend_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
 	// Child_state rekey_fs_tool { children, "rekey_fs_tool", "fs_tool", Ram_quota { 5 * 1024 * 1024 }, Cap_quota { 200 } };
 	// Child_state rekey_fs_query { children, "rekey_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
+	// Child_state system_fs_query { children, "system_fs_query", "fs_query", Ram_quota { 1 * 1024 * 1024 }, Cap_quota { 100 } };
 	Child_state lock_fs_tool { children, "lock_fs_tool", "fs_tool", Ram_quota { 6 * 1024 * 1024 }, Cap_quota { 200 } };
 	// Child_state lock_fs_query { children, "lock_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
 	// Child_state image_fs_query { children, "image_fs_query", "fs_query", Ram_quota { 2 * 1024 * 1024 }, Cap_quota { 100 } };
@@ -236,7 +237,7 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	// File_path image_name { "tresor.img" };
 
 	File_path image_name = config_rom.xml().attribute_value("image_name", File_path());
-	Passphrase passphrase { config_rom.xml().attribute_value("passphrase", Passphrase()) };
+	Passphrase passphrase = "P53ud0_Pa55w0rd"; // { config_rom.xml().attribute_value("passphrase", Passphrase()) };
 	// Xml_node const &config { _config_rom.xml() };
 
 	// 		Tresor::Passphrase const passphrase =
@@ -255,6 +256,16 @@ struct Main : Sandbox::Local_service_base::Wakeup, Sandbox::State_handler
 	// 	// ui_config->passphrase = Passphrase();
 	// 	Signal_transmitter(state_handler).submit();
 	// }
+
+	mutable Timer::One_shot_timeout<Main> pause_timeout {
+		timer, *this, &Main::handle_pause_timeout };
+		
+	void handle_pause_timeout(Duration) {
+		// Signal_transmitter(state_handler).submit(); // Added
+		set_state(UNMOUNT2); // Added
+		log("UNMOUNT2"); // Added
+		update_sandbox_config(); // Added
+	}
 
 	// void handle_sandbox_state_extend_and_rekey(Xml_node const &, bool &); // , bool &);
 
@@ -658,9 +669,12 @@ void Main::handle_sandbox_state()
 	case E2FSCK:
 		with_exit_code(e2fsck, sandbox_state.xml, [&] (int code) {
 
-			if (code == 0 || code == 1 || code == 2) {
+			if (code == 0) {
 				set_state(UNLOCKED); // SETUP_READ_FS_SIZE);
 				log("E2FSCK: UNLOCKED");
+			} else if (code == 1 || code == 2) {
+				set_state(UNMOUNT1); // SETUP_READ_FS_SIZE);
+				log("E2FSCK: UNMOUNT1");
 			} else {
 				set_state(INVALID); // UNINITIALIZED);
 				log("E2FSCK: INVALID");
@@ -686,6 +700,37 @@ void Main::handle_sandbox_state()
 		// set_state(UNLOCK_READ_FS_SIZE); // SETUP_READ_FS_SIZE);
 		// log("E2FSCK: UNLOCK_READ_FS_SIZE");
 		// update_sandbox_cfg = true;
+
+		break;
+
+		case UNMOUNT1:
+			// set_state(UNMOUNT2); // Added
+			// log("UNMOUNT2"); // Added
+			// update_sandbox_cfg = true; // Added
+			break;
+	
+		case UNMOUNT2:
+		// with_exit_code(system_vfs, sandbox_state.xml, [&] (int code) {
+
+		// 	if (code == 0) {
+		// 		set_state(UNLOCKED); // SETUP_READ_FS_SIZE);
+		// 		log("E2FSCK: UNLOCKED");
+		// 	} else if (code == 1 || code == 2) {
+		// 		set_state(UNMOUNT); // SETUP_READ_FS_SIZE);
+		// 		log("E2FSCK: UNMOUNT");
+		// 	} else {
+		// 		set_state(INVALID); // UNINITIALIZED);
+		// 		log("E2FSCK: INVALID");
+		// 	}
+
+		// 	update_sandbox_cfg = true;
+		// 	});
+
+		if (child_succeeded(system_vfs, sandbox_state.xml)) {
+			log("E2FSCK");
+			set_state(E2FSCK);
+			update_sandbox_cfg = true;
+		}
 
 		break;
 	case SETUP_INIT_TRUST_ANCHOR:
@@ -1021,6 +1066,28 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_e2fsck_start_node(xml, e2fsck);
 		break;
 
+	case UNMOUNT1:
+		if (!pause_timeout.scheduled()) // Added
+			pause_timeout.schedule(Microseconds { 3'000'000 }); // Added
+		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);
+		gen_system_vfs_start_node(xml, system_vfs, false);
+		// gen_system_fs_query_start_node(xml, system_fs_query);
+
+		break;
+
+	case UNMOUNT2:
+		// pause_timeout.schedule(Microseconds { 3'000'000 }); // Added
+		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs, image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
+		gen_system_vfs_start_node(xml, system_vfs, true);
+		// gen_system_fs_query_start_node(xml, system_fs_query);
+
+		break;
 	// case SETUP_READ_FS_SIZE:
 	// case UNLOCK_READ_FS_SIZE:
 
