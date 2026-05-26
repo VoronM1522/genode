@@ -101,14 +101,14 @@ namespace File_vault {
 			gen_service(xml, "PD");
 			gen_service(xml, "LOG");
 			gen_service(xml, "RM");
-			gen_service(xml, "File_system");
+			// gen_service(xml, "File_system");
 			// gen_service(xml, "Gui");
 			gen_service(xml, "Timer");
 			gen_service(xml, "Report");
 			gen_service(xml, "Rtc");
-			// gen_service(xml, "Block");
+			gen_service(xml, "Block");
 			// gen_parent_route(xml, "Gui");
-			gen_service(xml, "Snapper");
+			// gen_service(xml, "Snapper");
 		});
 	}
 
@@ -203,18 +203,22 @@ namespace File_vault {
 	// 		});
 	// 	});
 	// }
-
-	void gen_tresor_vfs_start_node(Xml_generator &xml, Child_state const &child, File_path const &image)
+	// <block name="block" block_buffer_count="128"/>
+	void gen_tresor_vfs_start_node(Xml_generator &xml, Child_state const &child) // , File_path const &image)
 	{
 		child.gen_start_node(xml, [&] {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.attribute("verbose", "yes");
 				xml.node("vfs", [&] {
-					xml.node("fs", [&] {
-						xml.attribute("buffer_size", "16M"); // 1
-						xml.attribute("label", "tresor_fs -> /");
+					xml.node("block", [&] {
+						xml.attribute("name", "block");
+						xml.attribute("block_buffer_count", "128");
 					});
+					// xml.node("fs", [&] { // block
+					// 	xml.attribute("buffer_size", "16M"); // 1
+					// 	xml.attribute("label", "tresor_fs -> /");
+					// });
 					gen_named_node(xml, "tresor_crypto_aes_cbc", "crypto", [] { });
 					gen_named_node(xml, "dir", "trust_anchor", [&] {
 						xml.node("fs", [&] {
@@ -224,7 +228,7 @@ namespace File_vault {
 					});
 					gen_named_node(xml, "dir", "dev", [&] {
 						gen_named_node(xml, "tresor", "tresor", [&] {
-							xml.attribute("block", File_path("/", image));
+							xml.attribute("block", "/block"); // File_path("/", image));
 							xml.attribute("crypto", "/crypto");
 							xml.attribute("trust_anchor", "/trust_anchor");
 						});
@@ -243,12 +247,14 @@ namespace File_vault {
 			});
 			xml.node("route", [&] {
 				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
-				gen_parent_route(xml, "File_system", "tresor_fs -> /");
+				// gen_parent_route(xml, "File_system", "tresor_fs -> /");
+				gen_parent_route(xml, "Block");
 				gen_common_routes(xml);
 			});
 		});
 	}
 
+	// <fatfs block="default" writeable="yes"/>
 	void gen_tresor_trust_anchor_vfs_start_node(Xml_generator &xml, Child_state const &child,
 	                                            bool jent_avail)
 	{
@@ -257,10 +263,15 @@ namespace File_vault {
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
 					gen_named_node(xml, "dir", "storage_dir", [&] {
-						xml.node("fs", [&] {
-							xml.attribute("buffer_size", "16M"); // 1
-							xml.attribute("label", "storage_dir -> /");
+						xml.node("fatfs", [&] {
+							xml.attribute("block", "default");
+							xml.attribute("writeable", "yes");
+							// xml.attribute("label", "storage_dir -> /");
 						});
+						// xml.node("fs", [&] {
+						// 	xml.attribute("buffer_size", "16M"); // 1
+						// 	xml.attribute("label", "storage_dir -> /");
+						// });
 					});
 					gen_named_node(xml, "dir", "dev", [&] {
 						gen_named_node(xml, "tresor_trust_anchor", "tresor_trust_anchor", [&] {
@@ -280,7 +291,7 @@ namespace File_vault {
 				gen_vfs_policy(xml, "se_tresor_vfs -> trust_anchor", "/dev/tresor_trust_anchor", true);
 			});
 			xml.node("route", [&] {
-				gen_parent_route(xml, "File_system", "storage_dir -> /");
+				gen_parent_route(xml, "Block");
 				gen_common_routes(xml);
 			});
 		});
@@ -486,13 +497,20 @@ namespace File_vault {
 				xml.node("trust-anchor", [&] { xml.attribute("path", "/trust_anchor"); });
 				xml.node("block-io", [&] {
 					xml.attribute("type", "vfs");
-					xml.attribute("path", "/tresor.img");
+					xml.attribute("path", "/dev/block");// "/tresor.img");
 				});
 				xml.node("crypto", [&] { xml.attribute("path", "/crypto"); });
 				xml.node("vfs", [&] {
-					xml.node("fs", [&] {
-						xml.attribute("buffer_size", "16M"); // 1
+					xml.node("dir", [&] {
+						xml.attribute("name", "dev");
+						xml.node("block", [&] {
+							xml.attribute("name", "block");
+							xml.attribute("block_buffer_count", "128");
+						});
 					});
+					// xml.node("fs", [&] {
+					// 	xml.attribute("buffer_size", "16M"); // 1
+					// });
 					gen_named_node(xml, "tresor_crypto_aes_cbc", "crypto", [] { });
 					gen_named_node(xml, "dir", "trust_anchor", [&] {
 						xml.node("fs", [&] { xml.attribute("label", "trust_anchor -> /"); }); });
@@ -501,7 +519,7 @@ namespace File_vault {
 			});
 			xml.node("route", [&] {
 				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system", "trust_anchor -> /");
-				gen_parent_route(xml, "File_system");
+				gen_parent_route(xml, "Block");
 				gen_common_routes(xml);
 			});
 		});
