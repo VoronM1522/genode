@@ -27,7 +27,7 @@ struct Main
 	Root_directory vfs { env, heap, config.xml().sub_node("vfs") };
 	Vfs::File_system &fs { vfs.root_dir() };
 	Directory::Path path { config.xml().attribute_value("path", Directory::Path { }) };
-	Directory::Path init_path { File_vault::File_path(path.string(), ".init").string() };
+	// Directory::Path init_path { File_vault::File_path(path.string(), ".init").string() };
 
 	Main(Env &env) : env(env)
 	{
@@ -35,17 +35,17 @@ struct Main
 		Vfs::Vfs_handle *handle_ptr = nullptr;
 		Vfs::Directory_service::Stat stat { };
 
-		if (fs.stat(init_path.string(), stat) == Vfs::Directory_service::STAT_OK) {
+		if (fs.stat(path.string(), stat) == Vfs::Directory_service::STAT_OK) {
 			log("Initialized");
 			env.parent().exit(0);
 		}
 
-		auto res = fs.open(init_path.string(), mode, &handle_ptr, heap);
+		auto res = fs.open(path.string(), mode, &handle_ptr, heap);
 
-		log("INIT_FILE: ", init_path.string());
+		log("INIT_FILE: ", path.string());
 
 		if (res != Vfs::Directory_service::OPEN_OK || (handle_ptr == nullptr)) {
-			error("failed to create file '", init_path, "'");
+			error("failed to create file '", path, "'");
 			env.parent().exit(-1);
 		}
 

@@ -262,7 +262,23 @@ namespace File_vault {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
+					// xml.node("dir", [&] {
+					// 	xml.attribute("name", "dev");
+					// 	xml.node("block", [&] {
+					// 		xml.attribute("name", "block");
+					// 		xml.attribute("block_buffer_count", "128");
+					// 	});
+					// });
 					gen_named_node(xml, "dir", "storage_dir", [&] {
+					// 	xml.node("lwext4", [&] {
+					// 		xml.attribute("block_device", "/dev/block");
+					// 		xml.attribute("cache_write_back", "no"); // yes
+					// 		xml.attribute("expand_via_io", "yes");
+					// 		xml.attribute("writeable", "yes");
+					// 		xml.attribute("reporting", "no");
+					// 		xml.attribute("external_cache_size", "32M");
+					// 		xml.attribute("report_cache", "no");
+					// 	});
 						xml.node("fatfs", [&] {
 							xml.attribute("block", "default");
 							xml.attribute("writeable", "yes");
@@ -289,6 +305,8 @@ namespace File_vault {
 				gen_vfs_policy(xml, "se_tresor_init_trust_anchor -> trust_anchor", "/dev/tresor_trust_anchor", true);
 				gen_vfs_policy(xml, "se_tresor_init -> trust_anchor", "/dev/tresor_trust_anchor", true);
 				gen_vfs_policy(xml, "se_tresor_vfs -> trust_anchor", "/dev/tresor_trust_anchor", true);
+				gen_vfs_policy(xml, "init_flag", "/storage_dir", true);
+				gen_vfs_policy(xml, "check_init_flag", "/storage_dir", true);
 			});
 			xml.node("route", [&] {
 				gen_parent_route(xml, "Block");
@@ -334,11 +352,11 @@ namespace File_vault {
 						xml.attribute("name", "root");
 						xml.node("lwext4", [&] {
 							xml.attribute("block_device", "/dev/block");
-							xml.attribute("cache_write_back", "no"); // yes
+							xml.attribute("cache_write_back", "yes"); // yes
 							xml.attribute("expand_via_io", "yes");
 							xml.attribute("writeable", "yes");
 							xml.attribute("reporting", "no");
-							// xml.attribute("external_cache_size", "32M");
+							xml.attribute("external_cache_size", "32M");
 							xml.attribute("report_cache", "no");
 						});
 					});
@@ -380,17 +398,39 @@ namespace File_vault {
 		});
 	}
 
-	void gen_init_flag_start_node(Xml_generator &xml, Child_state const &child, char const *path)
+	void gen_check_init_flag_start_node(Xml_generator &xml, Child_state const &child, char const *path)
 	{
 		child.gen_start_node(xml, [&] {
 			xml.node("config", [&] {
 				xml.attribute("path", path);
 				xml.node("vfs", [&] {
-					gen_named_node(xml, "dir", "tresor", [&] {
-						xml.node("fs", [&] { xml.attribute("label", "tresor -> /"); }); }); });
+					xml.node("fs", [&] {});
+					// gen_named_node(xml, "dir", "tresor", [&] {
+					// 	xml.node("fs", [&] { xml.attribute("label", "tresor -> /"); }); 
+					// }); 
+				});
 			});
 			xml.node("route", [&] {
-				gen_parent_route(xml, "File_system");
+				gen_child_route(xml,"se_tresor_trust_anchor_vfs", "File_system");
+				gen_common_routes(xml);
+			});
+		});
+	}
+	
+	void gen_setup_init_flag_start_node(Xml_generator &xml, Child_state const &child, char const *path)
+	{
+		child.gen_start_node(xml, [&] {
+			xml.node("config", [&] {
+				xml.attribute("path", path);
+				xml.node("vfs", [&] {
+					xml.node("fs", [&] {});
+					// gen_named_node(xml, "dir", "tresor", [&] {
+					// 	xml.node("fs", [&] { xml.attribute("label", "tresor -> /"); }); 
+					// }); 
+				});
+			});
+			xml.node("route", [&] {
+				gen_child_route(xml, "se_tresor_trust_anchor_vfs", "File_system");
 				gen_common_routes(xml);
 			});
 		});
@@ -427,7 +467,7 @@ namespace File_vault {
 		auto gen_policy = [&] (char const *label) {
 			xml.node("policy", [&] {
 				xml.attribute("label", label);
-				xml.attribute("block_size", "512");
+				xml.attribute("block_size", "4096"); // 512
 				xml.attribute("file", "/data");
 				xml.attribute("writeable", "yes");
 			});
