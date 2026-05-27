@@ -262,28 +262,28 @@ namespace File_vault {
 			gen_provides(xml, "File_system");
 			xml.node("config", [&] {
 				xml.node("vfs", [&] {
-					// xml.node("dir", [&] {
-					// 	xml.attribute("name", "dev");
-					// 	xml.node("block", [&] {
-					// 		xml.attribute("name", "block");
-					// 		xml.attribute("block_buffer_count", "128");
-					// 	});
-					// });
-					gen_named_node(xml, "dir", "storage_dir", [&] {
-					// 	xml.node("lwext4", [&] {
-					// 		xml.attribute("block_device", "/dev/block");
-					// 		xml.attribute("cache_write_back", "no"); // yes
-					// 		xml.attribute("expand_via_io", "yes");
-					// 		xml.attribute("writeable", "yes");
-					// 		xml.attribute("reporting", "no");
-					// 		xml.attribute("external_cache_size", "32M");
-					// 		xml.attribute("report_cache", "no");
-					// 	});
-						xml.node("fatfs", [&] {
-							xml.attribute("block", "default");
-							xml.attribute("writeable", "yes");
-							// xml.attribute("label", "storage_dir -> /");
+					xml.node("dir", [&] {
+						xml.attribute("name", "dev");
+						xml.node("block", [&] {
+							xml.attribute("name", "block");
+							xml.attribute("block_buffer_count", "128");
 						});
+					});
+					gen_named_node(xml, "dir", "storage_dir", [&] {
+						xml.node("lwext4", [&] {
+							xml.attribute("block_device", "/dev/block");
+							xml.attribute("cache_write_back", "no"); // yes
+							xml.attribute("expand_via_io", "yes");
+							xml.attribute("writeable", "yes");
+							xml.attribute("reporting", "no");
+							// xml.attribute("external_cache_size", "32M");
+							xml.attribute("report_cache", "no");
+						});
+						// xml.node("fatfs", [&] {
+						// 	xml.attribute("block", "default");
+						// 	xml.attribute("writeable", "yes");
+						// 	// xml.attribute("label", "storage_dir -> /");
+						// });
 						// xml.node("fs", [&] {
 						// 	xml.attribute("buffer_size", "16M"); // 1
 						// 	xml.attribute("label", "storage_dir -> /");
@@ -352,11 +352,11 @@ namespace File_vault {
 						xml.attribute("name", "root");
 						xml.node("lwext4", [&] {
 							xml.attribute("block_device", "/dev/block");
-							xml.attribute("cache_write_back", "yes"); // yes
+							xml.attribute("cache_write_back", "no"); // yes
 							xml.attribute("expand_via_io", "yes");
 							xml.attribute("writeable", "yes");
 							xml.attribute("reporting", "no");
-							xml.attribute("external_cache_size", "32M");
+							// xml.attribute("external_cache_size", "32M");
 							xml.attribute("report_cache", "no");
 						});
 					});

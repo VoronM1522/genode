@@ -672,7 +672,7 @@ void Main::handle_sandbox_state()
 
 			if (code == 0) {
 				set_state(UNLOCK_INIT_TRUST_ANCHOR); // SETUP_READ_FS_SIZE);
-				log("E2FSCK: UNLOCKED");
+				log("CHECK_INIT_FLAG: UNLOCK_INIT_TRUST_ANCHOR");
 			} else if (code == 1) {
 				set_state(SETUP_INIT_TRUST_ANCHOR); // SETUP_READ_FS_SIZE);
 				log("E2FSCK: SETUP_INIT_TRUST_ANCHOR");
@@ -1124,14 +1124,6 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 	// 	gen_client_fs_query_start_node(xml, client_fs_query);
 	// 	break;
 	
-	case SETUP_INIT_FLAG:
-		gen_parent_provides_and_report_nodes(xml);
-		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
-		gen_tresor_vfs_start_node(xml, tresor_vfs); // , image_name);
-		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
-		gen_setup_init_flag_start_node(xml, setup_init_flag, File_path(init_file_name).string());
-		break;
-
 	case SETUP_TRESOR_INIT:
 	{
 		Tresor::Superblock_configuration sb_config {
@@ -1158,6 +1150,15 @@ void Main::generate_sandbox_config(Xml_generator &xml) const
 		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
 		gen_mke2fs_start_node(xml, mke2fs);
 		break;
+
+	case SETUP_INIT_FLAG:
+		gen_parent_provides_and_report_nodes(xml);
+		gen_tresor_trust_anchor_vfs_start_node(xml, tresor_trust_anchor_vfs, jent_avail);
+		gen_tresor_vfs_start_node(xml, tresor_vfs); // , image_name);
+		gen_tresor_vfs_block_start_node(xml, tresor_vfs_block);	
+		gen_setup_init_flag_start_node(xml, setup_init_flag, File_path(init_file_name).string());
+		break;
+
 
 	case UNLOCKED:
 		log("UNLOCKED");
