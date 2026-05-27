@@ -305,7 +305,7 @@ namespace File_vault {
 				gen_vfs_policy(xml, "se_tresor_init_trust_anchor -> trust_anchor", "/dev/tresor_trust_anchor", true);
 				gen_vfs_policy(xml, "se_tresor_init -> trust_anchor", "/dev/tresor_trust_anchor", true);
 				gen_vfs_policy(xml, "se_tresor_vfs -> trust_anchor", "/dev/tresor_trust_anchor", true);
-				gen_vfs_policy(xml, "init_flag", "/storage_dir", true);
+				gen_vfs_policy(xml, "setup_init_flag", "/storage_dir", true);
 				gen_vfs_policy(xml, "check_init_flag", "/storage_dir", true);
 			});
 			xml.node("route", [&] {
