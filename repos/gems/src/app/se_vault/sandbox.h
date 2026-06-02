@@ -690,8 +690,11 @@ namespace File_vault {
 					});
 				});
 				xml.node("arg", [&] { xml.attribute("value", "e2fsck"); });
-				// xml.node("arg", [&] { xml.attribute("value", "-b"); });
-				// xml.node("arg", [&] { xml.attribute("value", "512"); });	
+				xml.node("arg", [&] { xml.attribute("value", "-v"); });
+				xml.node("arg", [&] { xml.attribute("value", "-B"); });
+				xml.node("arg", [&] { xml.attribute("value", "4096"); });
+				// // xml.node("arg", [&] { xml.attribute("value", "-b"); });
+				// xml.node("arg", [&] { xml.attribute("value", "4096"); });	
 				xml.node("arg", [&] { xml.attribute("value", "-p"); });  // auto-fix
 				// xml.node("arg", [&] { xml.attribute("value", "-f"); });  // force check
 				xml.node("arg", [&] { xml.attribute("value", "/dev/block"); });
