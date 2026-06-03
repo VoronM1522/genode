@@ -1,0 +1,4 @@
+Snapper Session
+===============
+
+This is only an RPC wrapper. For the Snapper interface documentation see /include/snapper.h.

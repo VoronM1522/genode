@@ -1,0 +1,145 @@
+#+title: Snapper 2.0
+#+author: Rumen Mitov
+#+email: rumen.mitov@constructor.tech
+
+[[./assets/snapper.png]]
+
+Snapper 2.0 (or just Snapper) is a snapshot mechanism for the virtual memory space of the persistent operating system PhantomOS. It uses the a logging file system (e.g. ext4) to ensure that file operations (e.g. modification or deletion) are resistant to OS crashes mid-way through the operation.
+
+A vital property of Snapper is that it needs to be disk space efficient in order not to bloat the file system. This is done by utilizing a mapping from the virtual pages (from now on referred only as pages) to a file containing their contents. Thus if a page remains unchanged its contents will still be mapped to a file from a previous snapshot, hence no new file needs to be created.
+
+* Requirements
+- Genode + Goa
+- [[https://codeberg.org/jws/genode-wundertuete/src/branch/25.05-2025-07-07][Lwext4 Plugin]] (optional)
+
+* Installation
+Install the requirements. This pre-built container image comes with all the dependencies needed for Genode:
+#+begin_src shell
+  git clone -b sculpt-25.10.1 https://github.com/genodelabs/genode.git
+
+  git clone https://github.com/genodelabs/goa.git genode/goa
+
+  git clone --depth 1 https://github.com/rumenmitov/snapper genode/repos/snapper
+
+  # If you want to use ext4 for the file-system:
+  git clone -b sculpt-25.10-2025-12-03 --depth 1 https://codeberg.org/jws/genode-wundertuete.git genode/repos/wundertuete
+
+  # Start the container
+  podman run -d --name genode --cap-add SYS_PTRACE -v $PWD/genode:/genode -w /genode docker.io/rmitov/genode:25.05 tail -f /dev/null
+#+end_src
+
+Follow the following steps inside the container.
+
+#+begin_quote
+❗ Make sure to setup Genode's [[https://genode.org/documentation/genode-foundations/25.05/getting_started/Using_the_build_system.html][build]] directory before continuing! ❗
+#+end_quote
+
+Add the following to /<genode>/build/x86_64/etc/build.conf/:
+
+: REPOSITORIES += $(GENODE_DIR)/repos/wundertuete # optional
+: REPOSITORIES += $(GENODE_DIR)/repos/snapper
+
+#+begin_src shell
+  # You may need to run this command twice, if it fails the first time.
+  goa update-goa 25.10 || (echo "Could not update goa to required version!" && exit 1)
+
+  /genode/tool/ports/prepare_port lwext4
+  DEPOT_DIR=/genode/repos/snapper/var/depot goa depot-dir
+  DEPOT_DIR=/genode/repos/snapper/var/depot FORCE_VERSION=2026-04-22 /genode/tool/depot/create rumen/bin/x86_64/vfs_lwext4
+
+  mkdir /genode/repos/snapper/raw
+
+  # NOTE: seek=16 will make the file only 16MB. If you want to run larger workloads increase this number.
+  dd if=/dev/zero of=/genode/repos/snapper/raw/snapper_block.raw bs=1M seek=16 count=0
+  mkfs.ext4 -O^metadata_csum -F /genode/repos/snapper/raw/snapper_block.raw
+#+end_src
+
+* Running Snapper
+If you are using the container, the following should be run inside the container.
+
+** With Goa
+:properties:
+:custom_id: with-goa
+:end:
+
+#+begin_quote
+*NOTE* The runtime file _pkg/snapper/runtime_ is made to persist changes made to the block storage during the execution of the program. _pkg/snapper_ itself does not make any changes; the runtime file exists for potential future debugging purposes.
+
+For a non-persistent runtime, see _pkg/snappertests/runtime_.
+#+end_quote
+
+#+begin_src shell
+  cd /genode/repos/snapper
+  goa run --pkg snapper
+#+end_src
+
+This will run the main Snapper binary. If instead you want to run the tests:
+
+: goa run --pkg snappertests
+
+To specify the number of snapshot objects that should be in the test simulation (~TESTS~ defaults to 1000):
+
+: TESTS=50 goa run --pkg snappertests
+
+** With Run Script
+
+#+begin_src shell
+  cd /genode
+  make -C build/x86_64 run/snapper KERNEL=linux BOARD=linux
+#+end_src
+
+Or, to run the tests:
+
+: make -C build/x86_64 run/snappertests KERNEL=linux BOARD=linux
+
+To (optionally) specify how many test objects to create (see [[#with-goa][Running With Goa]] for more details):
+
+: TESTS=50 make -C build/x86_64 run/snappertests KERNEL=linux BOARD=linux
+
+#+begin_quote
+NOTE: On subsequent runs, if you want to change ~TESTS~, you have to ~rm -rf /genode/build/x86_64/test/snapper/~ before running.
+#+end_quote
+
+** Integration Into Another Project
+The Snapper library is available for most run scripts and Goa projects. First run:
+
+: ./<genode-dir>/depot/tool/extract rumen/src/snap
+
+- For run scripts just add =lib/snap= to the build artifacts.
+- For Goa, add =rumen/api/snap/2025-08-05= to the _archives_ file.
+
+
+* Benchmarks
+To run benchmarks on Snapper, see _pkg/snapperbench/README.org_.
+
+* Configuration of Snapper
+:properties:
+:custom_id: configuration
+:end:
+Snapper should be configurable through Genode's XML. The configuration options are stored in ~Snapper::Config~:
+
+#+ATTR_LATEX: :environment longtable :align l|c|c|p{7cm}
+| OPTION        | TYPE         |     DEFAULT | DESCRIPTION                                               |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| verbose       | ~bool~         |       false | Whether to print verbose output.                          |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| threshold     | ~unsigned int~ |         100 | The maximum number of files in a _snapshot_ sub-directory.  |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| integrity     | ~bool~         |        true | If true, crash the system on failed integrity checks,     |
+|               |              |             | otherwise log a warning.                                  |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| redundancy    | ~unsigned int~ |           3 | After reaching this reference count, a redundant file     |
+|               |              |             | copy will be created for subsequent snapshot.             |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| max_snapshots | ~unsigned int~ |           0 | The maximum number of complete snapshots inside           |
+|               |              |             | _<snapper-root>_.                                           |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| min_snapshots | ~unsigned int~ |           0 | The minimum number of generations that need to be present |
+|               |              |             | for a purge to be possible.                               |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| expiration    | ~unsigned int~ |           0 | How many seconds a generation should be kept.             |
+|               | (seconds)    |             |                                                           |
+|---------------+--------------+-------------+-----------------------------------------------------------|
+| bufsize       | ~size_t~       | 1024 * 1024 | The size of the dataspace which will transfer the payload |
+|               | (bytes)      |             | to the snapper component.                                 |
+|---------------+--------------+-------------+-----------------------------------------------------------|

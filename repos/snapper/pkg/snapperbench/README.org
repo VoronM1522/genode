@@ -1,0 +1,48 @@
+#+title: Benchmark Suite
+
+* Initialization
+:PROPERTIES:
+:CUSTOM_ID: initialization
+:END:
+
+#+begin_src shell
+  set size=512 # File-system partition size (in MB)
+  dd if=/dev/zero of=/genode/repos/snapper/raw/snapper_block.raw bs=1M seek=$size count=0
+#+end_src
+
+#+begin_quote
+Since the benchmarking suite uses *persistent storage*, make sure you set =size= to an appropriately large value so that all your payload can be saved into the file-system.
+#+end_quote
+
+Create an ext4 file-system:
+
+#+begin_src shell
+  mkfs.ext4 -O^metadata_csum -F /genode/repos/snapper/raw/snapper_block.raw
+#+end_src
+
+Build the binary beforehand, so that the build steps do not appear in the benchmark:
+
+#+begin_src shell
+  goa build
+#+end_src
+
+** Build Configuration
+The benchmark suite allows for the following configuration options. Pass in the options as environment variables (e.g. with payload number option, PAYLOAD_NUM: =PAYLOAD_NUM=100 goa build=).
+
+| *Option*       | *Default* | *Description*                |
+| PAYLOAD_NUM  |     100 | Number of payload objects. |
+| PAYLOAD_SIZE |       1 | Payload size (in MB).      |
+
+
+* Benchmark
+Run your preferred benchmarking tool (e.g. with =perf=):
+
+#+begin_src shell
+  perf goa run --pkg snapperbench
+#+end_src
+
+#+begin_quote
+*NOTE:* Any build options used must be used during =goa build= as well as with =goa run=. This is due to ccache caching the build artifacts.
+#+end_quote
+
+Make sure to reset the file-system, otherwise changes made will persist in-between runs. Follow [[#initialization][Initialization]].

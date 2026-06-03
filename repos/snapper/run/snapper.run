@@ -1,0 +1,58 @@
+assert_spec linux
+
+#
+# Check used commands
+#
+set mke4fs [installed_command mkfs.ext4]
+set dd     [installed_command dd]
+set cat    [installed_command cat]
+
+#
+# Build
+#
+create_boot_directory
+build {
+    core init timer
+    lib/ld
+    lib/vfs
+    server/vfs
+    server/vfs_block
+    lib/vfs_import
+    lib/vfs_lwext4
+    driver/rtc
+    snapper
+}
+
+#
+# Build Ext4-file-system image
+#
+set image_size 16
+catch { exec $dd if=/dev/zero of=bin/snapper_block.raw bs=1M seek=$image_size count=0 }
+catch { exec $mke4fs -O^metadata_csum -F bin/snapper_block.raw }
+
+create_boot_directory
+
+#
+# Generate config
+#
+append config {
+    <config>
+}
+
+append config [ exec $cat [genode_dir]/repos/snapper/run/snapper-common.inc ]
+
+append config {
+    </config>
+}
+
+install_config $config
+
+build_boot_image [list {*}[build_artifacts] snapper_block.raw]
+
+run_genode_until {root snapper component created.*\n} 10
+
+exec rm -f bin/snapper_block.raw
+
+# Local Variables:
+# mode: tcl
+# End:

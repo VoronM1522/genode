@@ -1,0 +1,116 @@
+<!-- NOTE -->
+<!-- This script is made to persist changes made on the block storage. -->
+<!-- For a non-persistent version, see the snappertests runtime. -->
+
+<runtime ram="2G" caps="700" binary="init">
+  <requires>
+    <rtc />
+    <timer />
+  </requires>  
+
+  <content>
+    <rom label="snapper"/>
+    <rom label="snapperbench"/>
+    <rom label="vfs"/>
+    <rom label="lx_fs"/>
+    <rom label="vfs_block"/>
+    <rom label="vfs.lib.so"/>
+    <rom label="vfs_lwext4.lib.so" />
+    <rom label="snapper_block.raw"/>
+  </content>
+
+  <config>
+		<parent-provides>
+			<service name="ROM"/>
+			<service name="CPU"/>
+			<service name="RM"/>
+			<service name="PD"/>
+			<service name="LOG"/>
+			<service name="Rtc"/>
+			<service name="Timer"/>
+		</parent-provides>
+		<default-route>
+			<any-service> <parent/> <any-child/> </any-service>
+		</default-route>
+		<default caps="100" ram="1M"/>
+
+	  <start name="lx_fs" caps="200" ram="4M" ld="no">
+		  <provides> <service name="File_system"/> </provides>
+		  <config>
+			  <policy label_prefix="vfs_block"  root="/"  writeable="yes"/>
+		  </config>
+	  </start>
+
+
+    <start name="vfs_block" ram="1G">
+		  <provides><service name="Block"/></provides>
+		  <config>
+        <vfs>
+          <fs />
+			  </vfs>
+			  <policy label_prefix="vfs"
+			          file="/snapper_block.raw" block_size="512" writeable="yes"/>
+      </config>
+      <route>
+        <service name="File_system">
+          <child name="lx_fs"/>
+        </service>
+        <any-service> <parent/> </any-service>
+      </route>
+	  </start>
+
+ 	  <start name="vfs" ram="64M">
+ 		  <provides><service name="File_system"/></provides>
+ 		  <config>
+ 			  <vfs>
+ 				  <dir name="dev">
+ 					  <block name="block" block_buffer_count="512"/>
+ 				  </dir>
+				  <lwext4 block_device="/dev/block" cache_write_back="yes"
+				          expand_via_io="yes" writeable="yes"
+				          reporting="no"
+				          external_cache_size="32M" report_cache="no"/>
+ 			  </vfs>
+ 			  <policy label_prefix="snapper" root="/" writeable="yes"/>
+ 		  </config>
+ 	  </start>
+
+
+    <start name="snapper" ram="399M" caps="100">
+      <resource name="CPU" quantum="100"/>
+      <provides>
+        <service name="Snapper"/>
+      </provides>
+
+      <config
+          verbose="true"
+          redundancy="2"
+          integrity="true"
+          max_snapshots="0"
+          min_snapshots="0"
+          threshold="100"
+          expiration="3600"
+          bufsize="5M">
+
+        <rtc/>
+
+        <vfs>
+          <fs />
+        </vfs>
+      </config>
+      <route>
+        <service name="File_system"> <child name="vfs"/> </service>
+        <any-service> <parent/> </any-service>
+      </route>
+    </start>
+
+    <start name="snapperbench" ram="200M"> </start>
+
+  </config>
+
+</runtime>
+
+
+<!-- Local Variables: -->
+<!-- mode: xml -->
+<!-- End: -->

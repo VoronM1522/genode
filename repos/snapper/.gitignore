@@ -1,0 +1,7 @@
+/var/
+/raw/
+/.cache/
+/*.data
+/**/*.data
+
+/**/*.tex

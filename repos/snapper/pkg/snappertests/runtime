@@ -1,0 +1,92 @@
+<runtime ram="2G" caps="700" binary="init">
+  <requires> <rtc/> <timer /> </requires>  
+
+  <content>
+    <rom label="snappertests"/>
+    <rom label="snapper"/>
+    <rom label="vfs"/>
+    <rom label="vfs_block"/>
+    <rom label="vfs.lib.so"/>
+    <rom label="vfs_import.lib.so"/>
+    <rom label="vfs_lwext4.lib.so" />
+    <rom label="snapper_block.raw" />
+  </content>
+
+  <config>
+		<parent-provides>
+			<service name="ROM"/>
+			<service name="CPU"/>
+			<service name="RM"/>
+			<service name="PD"/>
+			<service name="LOG"/>
+			<service name="Rtc"/>
+			<service name="Timer"/>
+		</parent-provides>
+		<default-route>
+			<any-service> <parent/> <any-child/> </any-service>
+		</default-route>
+		<default caps="100" ram="1M"/>
+
+    <start name="vfs_block" ram="1G" caps="300">
+		  <provides><service name="Block"/></provides>
+		  <config>
+        <vfs>
+          <ram/>
+          <import>
+            <rom name="snapper_block.raw"/>
+          </import>
+			  </vfs>
+			  <policy label_prefix="vfs"
+			          file="/snapper_block.raw" block_size="512" writeable="yes"/>
+      </config>
+	  </start>
+
+ 	  <start name="vfs" ram="24M">
+ 		  <provides><service name="File_system"/></provides>
+ 		  <config>
+ 			  <vfs>
+ 				  <dir name="dev">
+ 					  <block name="block" io_buffer="128"/>
+ 				  </dir>
+				  <lwext4 block_device="/dev/block" cache_write_back="no"
+				          expand_via_io="yes" writeable="yes"
+				          reporting="no"
+				          external_cache_size="0M" report_cache="no"/>
+ 			  </vfs>
+ 			  <policy label_prefix="snapper" root="/" writeable="yes"/>
+ 		  </config>
+ 	  </start>
+
+
+    <start name="snapper" ram="400M" caps="100">
+      <provides>
+        <service name="Snapper"/>
+      </provides>
+
+      <config
+          verbose="true"
+          redundancy="2"
+          integrity="true"
+          max_snapshots="0"
+          min_snapshots="0"
+          threshold="100"
+          expiration="3600"
+          bufsize="1M">
+
+        <rtc/>
+
+        <vfs>
+          <fs/>
+        </vfs>
+      </config>
+    </start>
+
+    <start name="snappertests"> </start>
+  </config>
+
+</runtime>
+
+
+<!-- Local Variables: -->
+<!-- mode: xml -->
+<!-- End: -->
