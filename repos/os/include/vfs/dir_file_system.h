@@ -136,7 +136,7 @@ class Vfs::Dir_file_system : public File_system
 
 
 		/* pointer to first child file system */
-		File_system *_first_file_system = nullptr;
+		// File_system *_first_file_system = nullptr; // Added (commented and moved to public)
 
 		/* add new file system to the list of children */
 		void _append_file_system(File_system *fs)
@@ -365,6 +365,9 @@ class Vfs::Dir_file_system : public File_system
 
 	public:
 
+		/* pointer to first child file system */
+		File_system *_first_file_system = nullptr; // Added (commented and moved to public)
+
 		Dir_file_system(Vfs::Env &env, Genode::Xml_node const &node,
 		                File_system_factory &fs_factory)
 		:
@@ -392,6 +395,28 @@ class Vfs::Dir_file_system : public File_system
 				Genode::error("failed to create VFS node: ", sub_node);
 			});
 		}
+
+		// Added
+		void detach_children() { _first_file_system = nullptr; }
+
+		// Added
+		~Dir_file_system() override {
+			File_system *prev = nullptr;
+			File_system *curr = _first_file_system;
+			while (curr) {
+				File_system *next = curr->next;
+				curr->next = prev;
+				prev = curr;
+				curr = next;
+			}
+			File_system *fs = prev;
+			while (fs) {
+				File_system *next = fs->next;
+				fs->self_destroy(_env.alloc());
+				fs = next;
+			}
+		}
+
 
 		/*********************************
 		 ** Directory-service interface **

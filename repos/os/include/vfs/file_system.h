@@ -40,6 +40,13 @@ class Vfs::File_system : public Directory_service, public File_io_service
 
 		File_system() : next(0) { }
 
+		virtual ~File_system() { } // Added
+
+		// Added
+		virtual void self_destroy(Genode::Allocator &alloc) {
+			Genode::destroy(alloc, this);
+		}
+
 		/**
 		 * Adjust to configuration changes
 		 */

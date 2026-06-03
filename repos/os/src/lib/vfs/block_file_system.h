@@ -555,6 +555,25 @@ class Vfs::Block_file_system::Compound_file_system : private Local_factory,
 			                       *this }
 		{ }
 
+		// Added
+		~Compound_file_system() {
+			// Children are member variables of Local_factory, not heap allocations.
+			// Detach them so ~Dir_file_system() doesn't try to free them.
+			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
+				if (auto *dir = dynamic_cast<Vfs::Dir_file_system*>(fs))
+					dir->detach_children();
+			}
+			detach_children();
+		}
+
+		// Added
+		void self_destroy(Genode::Allocator &alloc) override {
+			// 'this' here is Compound_file_system* = allocation start
+			// (Local_factory is first base, so Compound* == alloc start)
+			Genode::destroy(alloc, this);
+		}
+
+
 		static const char *name() { return "block"; }
 
 		char const *type() override { return name(); }
