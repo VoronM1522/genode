@@ -154,7 +154,6 @@ class Vfs_tresor::Data_operation : private Noncopyable
 			}
 			ASSERT_NEVER_REACHED;
 		}
-
 		Result sync()
 		{
 			switch (_state) {
@@ -167,13 +166,15 @@ class Vfs_tresor::Data_operation : private Noncopyable
 
 			case SYNC_REQUESTED:
 			case SYNC_STARTED:
-			case SYNC: return PENDING;
+			case SYNC: 
+				return PENDING;
 			case SYNC_COMPLETE:
 
 				_state = INIT;
 				return _success ? SUCCEEDED : FAILED;
 
-			default: break;
+			default: 
+				break;
 			}
 			ASSERT_NEVER_REACHED;
 		}
@@ -943,6 +944,7 @@ class Vfs_tresor::Data_file_system : private Noncopyable, public Single_file_sys
 					return result;
 				}
 
+				// Added
 				Sync_result sync() override
 				{
 					Sync_result result = SYNC_QUEUED;
